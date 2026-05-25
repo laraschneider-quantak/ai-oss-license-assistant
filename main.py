@@ -1,11 +1,29 @@
 licenses = [
-    "MIT License",
-    "Apache License 2.0",
-    "GPL v3"
+    "MIT",
+    "Apache 2.0",
+    "GPL v3",
+    "LGPL",
+    "BSD",
+    "AGPL"
 ]
 
-for license_name in licenses:
-    if "GPL" in license_name:
-        print(f"RISIKO: {license_name}")
+def classify_license(license_name):
+    if license_name == "AGPL":
+        return "RISK"
+
+    elif "LGPL" in license_name:
+        return "CHECK"
+
+    elif "GPL" in license_name:
+        return "RISK"
+
+    elif license_name in ["MIT", "BSD", "Apache 2.0"]:
+        return "OK"
+
     else:
-        print(f"OK: {license_name}")
+        return "UNKNOWN"
+
+
+for license_name in licenses:
+    result = classify_license(license_name)
+    print(f"{result}: {license_name}")
