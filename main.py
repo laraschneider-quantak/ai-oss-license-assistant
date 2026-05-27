@@ -19,7 +19,7 @@ def classify_license(license_name):
         return "UNKNOWN"
 
 
-df = pd.read_csv("licenses.csv")
+df = pd.read_json("licenses.json")
 
 print(df)
 

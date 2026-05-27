@@ -1,0 +1,6 @@
+[
+  {"software": "Photoshop", "license": "Proprietary"},
+  {"software": "Linux Kernel", "license": "GPL v2"},
+  {"software": "VS Code", "license": "MIT"},
+  {"software": "Qt", "license": "LGPL"}
+]
