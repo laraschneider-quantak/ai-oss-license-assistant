@@ -2,53 +2,41 @@ import pandas as pd
 
 
 def classify_license(license_name):
+
     if license_name == "AGPL":
         return "RISK"
+
     elif "LGPL" in license_name:
         return "CHECK"
+
     elif "GPL" in license_name:
         return "RISK"
+
     elif license_name in ["MIT", "BSD", "Apache 2.0"]:
         return "OK"
+
     else:
         return "UNKNOWN"
 
 
-def scan_licenses(file_path):
-    df = pd.read_csv(file_path)
+df = pd.read_excel("licenses.xlsx")
 
-    ok_count = 0
-    risk_count = 0
-    check_count = 0
-    unknown_count = 0
+print("\n--- EXCEL LICENSE REPORT ---\n")
 
-    print("\n--- LICENSE SCAN REPORT ---\n")
+risk_count = 0
+risk_percent = 0
 
-    for index, row in df.iterrows():
-        software = row["software"]
-        license_name = row["license"]
+for index, row in df.iterrows():
 
-        result = classify_license(license_name)
+    software = row["software"]
+    license_name = row["license"]
 
-        print(f"{software}: {license_name} -> {result}")
+    result = classify_license(license_name)
 
-        if result == "OK":
-            ok_count += 1
-
-        elif result == "RISK":
-            risk_count += 1
-
-        elif result == "CHECK":
-            check_count += 1
-
-        else:
-            unknown_count += 1
-    print("\n--- SUMMARY ---\n")
-
-    print(f"OK: {ok_count}")
-    print(f"RISK: {risk_count}")
-    print(f"CHECK: {check_count}")
-    print(f"UNKNOWN: {unknown_count}")
-
-
-scan_licenses("licenses.csv")
+    if result == "RISK":
+     risk_count += 1
+     print(f"{software}: {license_name} -> {result}")
+ 
+    print(f"Total Risks: {risk_count}")
+    risk_percent = (risk_count / len(df)) * 100
+    print(f"Risk percent: {risk_percent}")
