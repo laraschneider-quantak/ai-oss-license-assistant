@@ -1,12 +1,16 @@
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="sk-proj-test"
+    api_key= "sk-projxyz"
 )
 
-response = client.responses.create(
-    model="gpt-5",
-    input="What is the MIT License?"
+response = client.embeddings.create(
+    model="text-embedding-3-small",
+    input="MIT License"
 )
 
-print(response.output_text)
+embedding = response.data[0].embedding
+
+print(type(embedding))
+print(len(embedding))
+print(embedding[:10])
