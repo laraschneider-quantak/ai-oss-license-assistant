@@ -1,0 +1,2 @@
+GPL v3 requires source code disclosure when software is distributed.
+GPL v3 is considered a strong copyleft license.

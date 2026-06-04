@@ -1,0 +1,2 @@
+Apache License 2.0 is permissive.
+It includes an explicit patent grant.

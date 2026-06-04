@@ -1,0 +1,2 @@
+MIT License is a permissive open source license.
+It allows commercial use and modification.

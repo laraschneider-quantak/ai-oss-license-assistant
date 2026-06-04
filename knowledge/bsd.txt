@@ -1,0 +1,2 @@
+BSD License is a permissive open source license.
+BSD has minimal redistribution requirements.
