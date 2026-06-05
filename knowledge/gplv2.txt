@@ -1,0 +1,8 @@
+GPL v2 is a strong copyleft license.
+
+Commercial use is allowed.
+Distribution is allowed.
+
+Source code disclosure is required when software is distributed.
+
+Generally considered high risk for proprietary software.

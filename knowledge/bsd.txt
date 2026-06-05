@@ -1,2 +1,9 @@
 BSD License is a permissive open source license.
-BSD has minimal redistribution requirements.
+
+Commercial use is allowed.
+Modification is allowed.
+Distribution is allowed.
+
+Source code disclosure is not required.
+
+Generally considered low risk for proprietary software.

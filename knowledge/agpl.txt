@@ -1,0 +1,5 @@
+AGPL is a strong copyleft license.
+
+Network use can trigger source code disclosure obligations.
+
+Generally considered very high risk for proprietary software.

@@ -3,7 +3,7 @@ import chromadb
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="sk-proj-XYZ"
+    api_key="sk-projXYZ"
 )
 
 chroma_client = chromadb.Client()
@@ -31,19 +31,27 @@ collection.add(
     ids=ids
 )
 
-query = "Which license requires source code disclosure?"
+query = input("Ask a compliance question: ")
 
 results = collection.query(
     query_texts=[query],
-    n_results=1
+    n_results=3
+)
+documents_for_gpt = "\n\n".join(
+    results["documents"][0]
 )
 
-best_document = results["documents"][0][0]
-best_id = results["ids"][0][0]
+print("\nQuestion:")
+print(query)
 
-print("Best document:")
-print(best_id)
-print(best_document)
+print("\nTop 3 Documents:")
+print(results["ids"][0])
+
+print("\nDistances:")
+print(results["distances"][0])
+
+#print("\nDocuments sent to GPT:")
+#print(documents_for_gpt)
 
 response = client.responses.create(
     model="gpt-5",
@@ -51,7 +59,7 @@ response = client.responses.create(
 Answer the question using only the information below.
 
 Information:
-{best_document}
+{documents_for_gpt}
 
 Question:
 {query}

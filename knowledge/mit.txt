@@ -1,2 +1,9 @@
 MIT License is a permissive open source license.
-It allows commercial use and modification.
+
+Commercial use is allowed.
+Modification is allowed.
+Distribution is allowed.
+
+Source code disclosure is not required.
+
+Generally considered low risk for proprietary software.

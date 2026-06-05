@@ -1,0 +1,5 @@
+Mozilla Public License is a file-level copyleft license.
+
+Changes to MPL files must be shared.
+
+Generally considered medium risk for proprietary software.

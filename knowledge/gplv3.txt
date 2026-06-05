@@ -1,0 +1,10 @@
+GPL v3 is a strong copyleft license.
+
+Commercial use is allowed.
+Distribution is allowed.
+
+Source code disclosure is required when software is distributed.
+
+Contains additional anti-tivoization provisions.
+
+Generally considered high risk for proprietary software.
