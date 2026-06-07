@@ -1,35 +1,47 @@
-import os
 import chromadb
 from openai import OpenAI
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 client = OpenAI(
-    api_key="sk-proj-XYZ"
+    api_key=os.getenv("OPENAI_API_KEY")
 )
 
-chroma_client = chromadb.Client()
+
+
+chroma_client = chromadb.PersistentClient(
+    path="chroma_db"
+)
 
 collection = chroma_client.get_or_create_collection(
     name="oss_compliance_knowledge"
 )
 
-folder = "knowledge"
 
-documents = []
-ids = []
+def detect_license(query):
+    query_lower = query.lower()
 
-for filename in os.listdir(folder):
-    filepath = os.path.join(folder, filename)
+    license_map = {
+        "mit": "mit.txt",
+        "bsd": "bsd.txt",
+        "apache": "apache.txt",
+        "gplv2": "gplv2.txt",
+        "gpl v2": "gplv2.txt",
+        "gplv3": "gplv3.txt",
+        "gpl v3": "gplv3.txt",
+        "lgpl": "lgpl.txt",
+        "agpl": "agpl.txt",
+        "mpl": "mpl.txt"
+    }
 
-    with open(filepath, "r", encoding="utf-8") as file:
-        content = file.read()
+    for license_name, filename in license_map.items():
+        if license_name in query_lower:
+            return filename
 
-    documents.append(content)
-    ids.append(filename)
+    return None
 
-collection.add(
-    documents=documents,
-    ids=ids
-)
 
 print("OSS Compliance Assistant started.")
 print("Type 'exit' to stop.\n")
@@ -41,14 +53,31 @@ while True:
         print("Assistant stopped.")
         break
 
-    results = collection.query(
-        query_texts=[query],
-        n_results=5
-    )
+    detected_license_file = detect_license(query)
 
-    documents_for_gpt = "\n\n".join(
-        results["documents"][0]
-    )
+    if detected_license_file:
+        results = collection.get(
+            ids=[detected_license_file]
+        )
+
+        documents_for_gpt = "\n\n".join(
+            results["documents"]
+        )
+
+        print(f"\nDetected license file: {detected_license_file}")
+
+    else:
+        results = collection.query(
+            query_texts=[query],
+            n_results=5
+        )
+
+        documents_for_gpt = "\n\n".join(
+            results["documents"][0]
+        )
+
+        print("\nTop documents:")
+        print(results["ids"][0])
 
     response = client.responses.create(
         model="gpt-5",
@@ -58,12 +87,10 @@ You are an OSS compliance assistant.
 Use only the information below.
 
 Task:
-1. Identify all licenses mentioned in the information.
-2. Compare their stated risk level.
+1. Answer the user's compliance question.
+2. If multiple licenses are mentioned, compare their stated risk level.
 3. If one license is described as "very high risk", choose that over "high risk".
-4. Answer with the single highest-risk license first, then give a short reason.
-
-
+4. If the information is not sufficient, say that the knowledge base does not contain enough information.
 
 Information:
 {documents_for_gpt}
