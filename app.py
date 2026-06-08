@@ -42,11 +42,18 @@ def detect_license(query):
 
 st.title("OSS Compliance Assistant")
 
-query = st.text_input(
-    "Ask a compliance question:"
+if st.button("Clear Chat"):
+    st.session_state.messages = []
+    st.rerun()
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+query = st.chat_input(
+    "Ask a compliance question"
 )
 
-if st.button("Ask"):
+if query:
 
     detected_license_file = detect_license(query)
 
@@ -69,9 +76,12 @@ if st.button("Ask"):
             results["documents"][0]
         )
 
-    response = client.responses.create(
-        model="gpt-5",
-        input=f"""
+
+    with st.spinner("Thinking..."):
+
+        response = client.responses.create(
+            model="gpt-5",
+            input=f"""
 You are an OSS compliance assistant.
 
 Use only the information below.
@@ -82,7 +92,26 @@ Information:
 Question:
 {query}
 """
+    )    
+
+    
+
+    st.session_state.messages.append(
+        {
+            "question": query,
+            "answer": response.output_text,
+            "sources": results["ids"][0] if not detected_license_file else [detected_license_file]
+        }
     )
 
-    st.subheader("Answer")
-    st.write(response.output_text)
+
+for message in st.session_state.messages:
+
+    with st.chat_message("user"):
+        st.write(message["question"])
+
+    with st.chat_message("assistant"):
+        st.write(message["answer"])
+        st.caption(
+        "Sources: " + ", ".join(message["sources"])
+        )
