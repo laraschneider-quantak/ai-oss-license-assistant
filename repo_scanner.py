@@ -1,13 +1,11 @@
 import os
 
 folder = "test_repo"
-print("Folder:", folder)
-print("Exists:", os.path.exists(folder))
 
 print("Scanning repository...\n")
 
-def detect_license(text):
 
+def detect_license(text):
     text = text.lower()
 
     if "mit license" in text:
@@ -24,8 +22,8 @@ def detect_license(text):
 
     return "Unknown"
 
-def get_risk_level(license_name):
 
+def get_risk_level(license_name):
     risk_map = {
         "MIT": "Low Risk",
         "Apache": "Low Risk",
@@ -36,10 +34,19 @@ def get_risk_level(license_name):
         "AGPL": "Very High Risk"
     }
 
-    return risk_map.get(
-        license_name,
-        "Unknown Risk"
-    )
+    return risk_map.get(license_name, "Unknown Risk")
+
+
+scan_results = []
+
+risk_scores = {
+    "Unknown Risk": 0,
+    "Low Risk": 1,
+    "Medium Risk": 2,
+    "High Risk": 3,
+    "Very High Risk": 4
+}
+
 
 for root, dirs, files in os.walk(folder):
 
@@ -56,31 +63,44 @@ for root, dirs, files in os.walk(folder):
     for file in files:
 
         if file.lower() in [
-    "license",
-    "license.txt",
-    "license.md",
-    "copying",
-    "copying.txt"
-]:
-
+            "license",
+            "license.txt",
+            "license.md",
+            "copying",
+            "copying.txt"
+        ]:
             filepath = os.path.join(root, file)
 
-            print(f"Found license file: {filepath}")
+            with open(filepath, "r", encoding="utf-8") as license_file:
+                content = license_file.read()
 
-with open(filepath, "r", encoding="utf-8") as license_file:
-    content = license_file.read()
+            license_name = detect_license(content)
+            risk_level = get_risk_level(license_name)
 
-    license_name = detect_license(content)
+            scan_results.append(
+                {
+                    "file": filepath,
+                    "license": license_name,
+                    "risk": risk_level
+                }
+            )
 
-    risk_level = get_risk_level(
-    license_name
-    )
 
-print(
-    f"Risk Level: {risk_level}"
-)
+print("--- Repository Compliance Report ---\n")
 
-print(f"\nDetected License: {license_name}")
+for result in scan_results:
+    print(f'File: {result["file"]}')
+    print(f'Detected License: {result["license"]}')
+    print(f'Risk Level: {result["risk"]}')
+    print("-" * 40)
 
-print("\nContent preview:")
-print(content[:300])
+print("\n--- Summary ---")
+print(f"Files scanned: {len(scan_results)}")
+
+highest_risk = "Unknown Risk"
+
+for result in scan_results:
+    if risk_scores[result["risk"]] > risk_scores[highest_risk]:
+        highest_risk = result["risk"]
+
+print(f"Highest Risk: {highest_risk}")
