@@ -167,12 +167,22 @@ for result in scan_results:
 print(f"Highest Risk: {highest_risk}")
 
 
+spdx_expression = " AND ".join(
+    [
+        result["spdx_id"]
+        for result in scan_results
+    ]
+)
+
 # Build JSON compliance report
 report = {
     "files_scanned": len(scan_results),
     "highest_risk": highest_risk,
+    "spdx_expression": spdx_expression,
     "results": scan_results
 }
+
+
 
 
 # Save report to disk

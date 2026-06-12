@@ -1,6 +1,7 @@
 {
     "files_scanned": 3,
     "highest_risk": "High Risk",
+    "spdx_expression": "MIT AND GPL-3.0-only AND Apache-2.0",
     "results": [
         {
             "file": "test_repo\\license",
