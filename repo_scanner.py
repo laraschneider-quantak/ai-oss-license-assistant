@@ -12,8 +12,11 @@ def detect_license(text):
 
     text = text.lower()
 
-    if "mit license" in text:
-        return "MIT"
+    if "affero general public license" in text:
+        return "AGPL"
+
+    if "lesser general public license" in text:
+        return "LGPL"
 
     if "gnu general public license" in text:
         return "GPL"
@@ -21,8 +24,20 @@ def detect_license(text):
     if "apache license" in text:
         return "Apache"
 
+    if "mit license" in text:
+        return "MIT"
+
+    if "bsd license" in text:
+        return "BSD"
+
     if "mozilla public license" in text:
         return "MPL"
+
+    if "eclipse public license" in text:
+        return "EPL"
+
+    if "common development and distribution license" in text:
+        return "CDDL"
 
     return "Unknown"
 
@@ -35,6 +50,8 @@ def get_risk_level(license_name):
         "Apache": "Low Risk",
         "BSD": "Low Risk",
         "MPL": "Medium Risk",
+        "EPL": "Medium Risk",
+        "CDDL": "Medium Risk",
         "LGPL": "Medium Risk",
         "GPL": "High Risk",
         "AGPL": "Very High Risk"
@@ -54,6 +71,8 @@ def get_spdx_id(license_name):
         "Apache": "Apache-2.0",
         "BSD": "BSD-3-Clause",
         "MPL": "MPL-2.0",
+        "EPL": "EPL-2.0",
+        "CDDL": "CDDL-1.0",
         "LGPL": "LGPL-2.1-only",
         "GPL": "GPL-3.0-only",
         "AGPL": "AGPL-3.0-only"
@@ -163,8 +182,6 @@ for result in scan_results:
 
     if risk_scores[result["risk"]] > risk_scores[highest_risk]:
         highest_risk = result["risk"]
-
-print(f"Highest Risk: {highest_risk}")
 
 
 spdx_expression = " AND ".join(

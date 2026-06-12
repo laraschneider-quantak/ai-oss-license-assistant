@@ -1,7 +1,7 @@
 {
-    "files_scanned": 3,
-    "highest_risk": "High Risk",
-    "spdx_expression": "MIT AND GPL-3.0-only AND Apache-2.0",
+    "files_scanned": 4,
+    "highest_risk": "Very High Risk",
+    "spdx_expression": "MIT AND AGPL-3.0-only AND GPL-3.0-only AND Apache-2.0",
     "results": [
         {
             "file": "test_repo\\license",
@@ -9,6 +9,13 @@
             "spdx_id": "MIT",
             "license_expression": "MIT",
             "risk": "Low Risk"
+        },
+        {
+            "file": "test_repo\\network_service\\LICENSE",
+            "detected_license": "AGPL",
+            "spdx_id": "AGPL-3.0-only",
+            "license_expression": "AGPL-3.0-only",
+            "risk": "Very High Risk"
         },
         {
             "file": "test_repo\\third_party\\LICENSE",
