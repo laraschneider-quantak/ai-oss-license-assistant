@@ -2,7 +2,7 @@ import os
 import json
 
 # Repository folder to scan
-folder = "test_repo"
+folder = "external_repos/flask"
 
 print("Scanning repository...\n")
 
@@ -28,6 +28,12 @@ def detect_license(text):
         return "MIT"
 
     if "bsd license" in text:
+        return "BSD"
+    
+    if (
+    "redistribution and use in source and binary forms" in text
+         and "neither the name of the copyright holder" in text
+        ):
         return "BSD"
 
     if "mozilla public license" in text:
@@ -134,6 +140,9 @@ for root, dirs, files in os.walk(folder):
             ) as license_file:
 
                 content = license_file.read()
+                print("\n----- LICENSE PREVIEW -----")
+                print(content[:500])
+                print("---------------------------")
 
             # Detect license information
             license_name = detect_license(content)
