@@ -1,0 +1,13 @@
+{
+    "files_scanned": 1,
+    "highest_risk": "Low Risk",
+    "results": [
+        {
+            "file": "test_repo\\license",
+            "detected_license": "MIT",
+            "spdx_id": "MIT",
+            "license_expression": "MIT",
+            "risk": "Low Risk"
+        }
+    ]
+}

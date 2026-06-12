@@ -1,4 +1,5 @@
 import os
+import json
 
 folder = "test_repo"
 
@@ -80,8 +81,10 @@ for root, dirs, files in os.walk(folder):
             scan_results.append(
                 {
                     "file": filepath,
-                    "license": license_name,
-                    "risk": risk_level
+                     "detected_license": license_name,
+                     "spdx_id": license_name,        
+                     "license_expression": license_name,
+                     "risk": risk_level
                 }
             )
 
@@ -90,7 +93,7 @@ print("--- Repository Compliance Report ---\n")
 
 for result in scan_results:
     print(f'File: {result["file"]}')
-    print(f'Detected License: {result["license"]}')
+    print(f'Detected License: {result["detected_license"]}')
     print(f'Risk Level: {result["risk"]}')
     print("-" * 40)
 
@@ -104,3 +107,26 @@ for result in scan_results:
         highest_risk = result["risk"]
 
 print(f"Highest Risk: {highest_risk}")
+report = {
+    "files_scanned": len(scan_results),
+    "highest_risk": highest_risk,
+    "results": scan_results
+}
+
+with open(
+    "compliance_report.json",
+    "w",
+    encoding="utf-8"
+) as report_file:
+
+    json.dump(
+        report,
+        report_file,
+        indent=4
+    )
+
+print(
+    "\nJSON report saved: compliance_report.json"
+)
+
+print(f'{result["file"]}: {result["detected_license"]} -> {result["risk"]}')
