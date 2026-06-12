@@ -1,12 +1,26 @@
 {
-    "files_scanned": 1,
-    "highest_risk": "Low Risk",
+    "files_scanned": 3,
+    "highest_risk": "High Risk",
     "results": [
         {
             "file": "test_repo\\license",
             "detected_license": "MIT",
             "spdx_id": "MIT",
             "license_expression": "MIT",
+            "risk": "Low Risk"
+        },
+        {
+            "file": "test_repo\\third_party\\LICENSE",
+            "detected_license": "GPL",
+            "spdx_id": "GPL-3.0-only",
+            "license_expression": "GPL-3.0-only",
+            "risk": "High Risk"
+        },
+        {
+            "file": "test_repo\\vendor\\COPYING",
+            "detected_license": "Apache",
+            "spdx_id": "Apache-2.0",
+            "license_expression": "Apache-2.0",
             "risk": "Low Risk"
         }
     ]
