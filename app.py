@@ -240,7 +240,7 @@ if st.button("Scan Repository"):
                         filepath
                     )
 
-        st.subheader("License Files Found")
+
 
         if license_files:
             highest_risk = "Unknown Risk"
@@ -252,6 +252,8 @@ if st.button("Scan Repository"):
                 "High Risk": 3,
                 "Very High Risk": 4
             }
+
+            scan_results = []
 
             # Read each license file and detect license + risk
             for filepath in license_files:
@@ -270,17 +272,43 @@ if st.button("Scan Repository"):
                     detected_license
                 )
 
+                scan_results.append(
+                    {
+                        "File": filepath,
+                        "License": detected_license,
+                        "Risk": risk_level
+                    }
+                )
+
                 if risk_scores[risk_level] > risk_scores[highest_risk]:
                     highest_risk = risk_level
 
-                st.write(
-                    f"{filepath} → {detected_license} → {risk_level}"
-                )
+               
 
-            st.subheader("Repository Summary")
+            st.subheader("License Scan Results")
 
-            st.write(
-                f"Overall Repository Risk: {highest_risk}"
+            st.table(scan_results)
+
+            st.metric(
+                "License Files",
+                len(scan_results)
+            )
+
+            if highest_risk == "Very High Risk":
+                st.error("Overall Repository Risk: Very High Risk")
+            elif highest_risk == "High Risk":
+                    st.warning("Overall Repository Risk: High Risk")
+            elif highest_risk == "Medium Risk":
+                    st.info("Overall Repository Risk: Medium Risk")
+            elif highest_risk == "Low Risk":
+                    st.success("Overall Repository Risk: Low Risk")
+            else:
+                    st.warning("Overall Repository Risk: Unknown Risk")
+
+                    st.subheader("Repository Summary")
+
+                    st.write(
+                    f"Overall Repository Risk: {highest_risk}"
             )
 
         else:
