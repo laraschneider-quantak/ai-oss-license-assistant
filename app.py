@@ -1,4 +1,5 @@
 import os
+import subprocess
 import chromadb
 import streamlit as st
 from dotenv import load_dotenv
@@ -193,11 +194,52 @@ st.divider()
 
 st.header("Repository Compliance Scanner")
 
-# Repository path input
-repo_path = st.text_input(
-    "Repository path:",
-    value="test_repo"
+github_url = st.text_input(
+    "GitHub repository URL:",
+    value="https://github.com/psf/requests.git"
 )
+
+repo_name = github_url.rstrip("/").split("/")[-1].replace(".git", "")
+
+clone_path = os.path.join(
+    "external_repos",
+    repo_name
+)
+
+if st.button("Clone Repository"):
+
+    os.makedirs(
+        "external_repos",
+        exist_ok=True
+    )
+
+    if os.path.exists(clone_path):
+
+        st.info(
+            f"Repository already exists: {clone_path}"
+        )
+
+    else:
+
+        with st.spinner("Cloning repository..."):
+
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    github_url,
+                    clone_path
+                ],
+                check=True
+            )
+
+        st.success(
+            f"Repository cloned to: {clone_path}"
+        )
+
+# Repository path input
+repo_path = clone_path
+
 
 # Scan repository button
 if st.button("Scan Repository"):
