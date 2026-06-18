@@ -7,26 +7,21 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# Load environment variables from .env
 load_dotenv()
 
-# Create OpenAI client
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-# Open persistent ChromaDB database
 chroma_client = chromadb.PersistentClient(
     path="chroma_db"
 )
 
-# Open or create the knowledge collection
 collection = chroma_client.get_or_create_collection(
     name="oss_compliance_knowledge"
 )
 
 
-# Detect direct license mentions in user questions
 def detect_license(query):
     query_lower = query.lower()
 
@@ -50,7 +45,6 @@ def detect_license(query):
     return None
 
 
-# Detect license type from repository license text
 def detect_repository_license(text):
     text = text.lower()
 
@@ -87,7 +81,6 @@ def detect_repository_license(text):
     return "Unknown"
 
 
-# Map detected licenses to compliance risk levels
 def get_risk_level(license_name):
     risk_map = {
         "MIT": "Low Risk",
@@ -107,9 +100,7 @@ def get_risk_level(license_name):
     )
 
 
-# Convert detected licenses to SPDX identifiers
 def get_spdx_id(license_name):
-
     spdx_map = {
         "MIT": "MIT",
         "Apache": "Apache-2.0",
@@ -128,15 +119,107 @@ def get_spdx_id(license_name):
     )
 
 
-# Page title
+def scan_repository(repo_path, repo_name):
+    if not os.path.exists(repo_path):
+        st.error(
+            f"Repository not found: {repo_path}"
+        )
+        return
+
+    st.success(
+        f"Repository found: {repo_path}"
+    )
+
+    license_files = []
+
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [
+            d for d in dirs
+            if d not in [
+                ".git",
+                "__pycache__",
+                "venv",
+                "chroma_db"
+            ]
+        ]
+
+        for file in files:
+            if file.lower() in [
+                "license",
+                "license.txt",
+                "license.md",
+                "copying",
+                "copying.txt"
+            ]:
+                filepath = os.path.join(
+                    root,
+                    file
+                )
+
+                license_files.append(
+                    filepath
+                )
+
+    if not license_files:
+        st.warning("No license files found.")
+        return
+
+    highest_risk = "Unknown Risk"
+
+    risk_scores = {
+        "Unknown Risk": 0,
+        "Low Risk": 1,
+        "Medium Risk": 2,
+        "High Risk": 3,
+        "Very High Risk": 4
+    }
+
+    scan_results = []
+
+    for filepath in license_files:
+        with open(
+            filepath,
+            "r",
+            encoding="utf-8"
+        ) as license_file:
+            content = license_file.read()
+
+        detected_license = detect_repository_license(
+            content
+        )
+
+        risk_level = get_risk_level(
+            detected_license
+        )
+
+        spdx_id = get_spdx_id(
+            detected_license
+        )
+
+        scan_results.append(
+            {
+                "File": filepath,
+                "License": detected_license,
+                "SPDX": spdx_id,
+                "Risk": risk_level
+            }
+        )
+
+        if risk_scores[risk_level] > risk_scores[highest_risk]:
+            highest_risk = risk_level
+
+    st.session_state.scan_results = scan_results
+    st.session_state.highest_risk = highest_risk
+    st.session_state.repo_name = repo_name
+    st.session_state.ai_advice = ""
+
+
 st.title("OSS Compliance Assistant")
 
-# Clear chat history
 if st.button("Clear Chat"):
     st.session_state.messages = []
     st.rerun()
 
-# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -149,16 +232,16 @@ if "highest_risk" not in st.session_state:
 if "repo_name" not in st.session_state:
     st.session_state.repo_name = ""
 
-# Chat input field
+if "ai_advice" not in st.session_state:
+    st.session_state.ai_advice = ""
+
 query = st.chat_input(
     "Ask a compliance question"
 )
 
-# Process chat query
 if query:
     detected_license_file = detect_license(query)
 
-    # If a specific license is mentioned, retrieve the exact document
     if detected_license_file:
         results = collection.get(
             ids=[detected_license_file]
@@ -170,7 +253,6 @@ if query:
 
         sources = [detected_license_file]
 
-    # Otherwise use semantic search
     else:
         results = collection.query(
             query_texts=[query],
@@ -183,7 +265,6 @@ if query:
 
         sources = results["ids"][0]
 
-    # Ask GPT using the retrieved context
     with st.spinner("Thinking..."):
         response = client.responses.create(
             model="gpt-5",
@@ -200,7 +281,6 @@ Question:
 """
         )
 
-    # Store question, answer and sources in chat history
     st.session_state.messages.append(
         {
             "question": query,
@@ -210,7 +290,6 @@ Question:
     )
 
 
-# Display chat history
 for message in st.session_state.messages:
     with st.chat_message("user"):
         st.write(message["question"])
@@ -238,23 +317,19 @@ clone_path = os.path.join(
     repo_name
 )
 
-if st.button("Clone Repository"):
-
+if st.button("Clone & Scan Repository"):
     os.makedirs(
         "external_repos",
         exist_ok=True
     )
 
     if os.path.exists(clone_path):
-
         st.info(
             f"Repository already exists: {clone_path}"
         )
 
     else:
-
         with st.spinner("Cloning repository..."):
-
             subprocess.run(
                 [
                     "git",
@@ -269,122 +344,13 @@ if st.button("Clone Repository"):
             f"Repository cloned to: {clone_path}"
         )
 
-# Repository path input
-repo_path = clone_path
-
-# Scan repository button
-if st.button("Scan Repository"):
-
-    if os.path.exists(repo_path):
-
-        st.success(
-            f"Repository found: {repo_path}"
-        )
-
-        license_files = []
-
-        # Walk through repository folders
-        for root, dirs, files in os.walk(repo_path):
-
-            # Skip folders that should not be scanned
-            dirs[:] = [
-                d for d in dirs
-                if d not in [
-                    ".git",
-                    "__pycache__",
-                    "venv",
-                    "chroma_db"
-                ]
-            ]
-
-            # Find common license file names
-            for file in files:
-
-                if file.lower() in [
-                    "license",
-                    "license.txt",
-                    "license.md",
-                    "copying",
-                    "copying.txt"
-                ]:
-
-                    filepath = os.path.join(
-                        root,
-                        file
-                    )
-
-                    license_files.append(
-                        filepath
-                    )
-
-        if license_files:
-
-            highest_risk = "Unknown Risk"
-
-            risk_scores = {
-                "Unknown Risk": 0,
-                "Low Risk": 1,
-                "Medium Risk": 2,
-                "High Risk": 3,
-                "Very High Risk": 4
-            }
-
-            scan_results = []
-
-            # Read each license file and detect license, SPDX ID and risk
-            for filepath in license_files:
-
-                with open(
-                    filepath,
-                    "r",
-                    encoding="utf-8"
-                ) as license_file:
-
-                    content = license_file.read()
-
-                detected_license = detect_repository_license(
-                    content
-                )
-
-                risk_level = get_risk_level(
-                    detected_license
-                )
-
-                spdx_id = get_spdx_id(
-                    detected_license
-                )
-
-                scan_results.append(
-                    {
-                        "File": filepath,
-                        "License": detected_license,
-                        "SPDX": spdx_id,
-                        "Risk": risk_level
-                    }
-                )
-
-                if risk_scores[risk_level] > risk_scores[highest_risk]:
-                    highest_risk = risk_level
-
-            # Store scan results so they survive Streamlit reruns
-            st.session_state.scan_results = scan_results
-            st.session_state.highest_risk = highest_risk
-            st.session_state.repo_name = repo_name
-
-        else:
-
-            st.warning("No license files found.")
-
-    else:
-
-        st.error(
-            f"Repository not found: {repo_path}"
-        )
+    scan_repository(
+        repo_path=clone_path,
+        repo_name=repo_name
+    )
 
 
-# Display latest scan results
 if st.session_state.scan_results:
-
     st.subheader("License Scan Results")
 
     df = pd.DataFrame(
@@ -414,7 +380,6 @@ if st.session_state.scan_results:
     }
 
     for result in st.session_state.scan_results:
-
         spdx_report["packages"].append(
             {
                 "name": result["File"],
@@ -440,6 +405,48 @@ if st.session_state.scan_results:
         len(st.session_state.scan_results)
     )
 
+    if st.button("Generate AI Compliance Advice"):
+        licenses_for_ai = []
+
+        for result in st.session_state.scan_results:
+            licenses_for_ai.append(
+                {
+                    "file": result["File"],
+                    "license": result["License"],
+                    "spdx": result["SPDX"],
+                    "risk": result["Risk"]
+                }
+            )
+
+        with st.spinner("Generating AI compliance advice..."):
+            response = client.responses.create(
+                model="gpt-5",
+                input=f"""
+You are an OSS compliance advisor.
+
+Analyze the following repository license scan results.
+
+Important:
+- This is not legal advice.
+- Be practical and specific.
+- Explain the main compliance risks.
+- Give concrete next steps.
+- Keep the answer concise.
+
+Scan results:
+{licenses_for_ai}
+"""
+            )
+
+        st.session_state.ai_advice = response.output_text
+
+    if st.session_state.ai_advice:
+        st.subheader("AI Compliance Advice")
+
+        st.write(
+            st.session_state.ai_advice
+        )
+
     highest_risk = st.session_state.highest_risk
 
     if highest_risk == "Very High Risk":
@@ -456,4 +463,3 @@ if st.session_state.scan_results:
 
     else:
         st.warning("Overall Repository Risk: Unknown Risk")
-        
