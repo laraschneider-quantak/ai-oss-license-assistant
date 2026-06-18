@@ -7,26 +7,21 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# Load environment variables from .env
 load_dotenv()
 
-# Create OpenAI client
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-# Open persistent ChromaDB database
 chroma_client = chromadb.PersistentClient(
     path="chroma_db"
 )
 
-# Open or create the knowledge collection
 collection = chroma_client.get_or_create_collection(
     name="oss_compliance_knowledge"
 )
 
 
-# Detect direct license mentions in user questions
 def detect_license(query):
     query_lower = query.lower()
 
@@ -50,7 +45,6 @@ def detect_license(query):
     return None
 
 
-# Detect license type from repository license text
 def detect_repository_license(text):
     text = text.lower()
 
@@ -87,7 +81,6 @@ def detect_repository_license(text):
     return "Unknown"
 
 
-# Map detected licenses to compliance risk levels
 def get_risk_level(license_name):
     risk_map = {
         "MIT": "Low Risk",
@@ -107,7 +100,6 @@ def get_risk_level(license_name):
     )
 
 
-# Convert detected licenses to SPDX identifiers
 def get_spdx_id(license_name):
     spdx_map = {
         "MIT": "MIT",
@@ -127,7 +119,6 @@ def get_spdx_id(license_name):
     )
 
 
-# Scan repository and store results in session state
 def scan_repository(repo_path, repo_name):
     if not os.path.exists(repo_path):
         st.error(
@@ -220,17 +211,15 @@ def scan_repository(repo_path, repo_name):
     st.session_state.scan_results = scan_results
     st.session_state.highest_risk = highest_risk
     st.session_state.repo_name = repo_name
+    st.session_state.ai_advice = ""
 
 
-# Page title
 st.title("OSS Compliance Assistant")
 
-# Clear chat history
 if st.button("Clear Chat"):
     st.session_state.messages = []
     st.rerun()
 
-# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -243,12 +232,13 @@ if "highest_risk" not in st.session_state:
 if "repo_name" not in st.session_state:
     st.session_state.repo_name = ""
 
-# Chat input field
+if "ai_advice" not in st.session_state:
+    st.session_state.ai_advice = ""
+
 query = st.chat_input(
     "Ask a compliance question"
 )
 
-# Process chat query
 if query:
     detected_license_file = detect_license(query)
 
@@ -300,7 +290,6 @@ Question:
     )
 
 
-# Display chat history
 for message in st.session_state.messages:
     with st.chat_message("user"):
         st.write(message["question"])
@@ -329,7 +318,6 @@ clone_path = os.path.join(
 )
 
 if st.button("Clone & Scan Repository"):
-
     os.makedirs(
         "external_repos",
         exist_ok=True
@@ -362,9 +350,7 @@ if st.button("Clone & Scan Repository"):
     )
 
 
-# Display latest scan results
 if st.session_state.scan_results:
-
     st.subheader("License Scan Results")
 
     df = pd.DataFrame(
@@ -418,6 +404,48 @@ if st.session_state.scan_results:
         "License Files",
         len(st.session_state.scan_results)
     )
+
+    if st.button("Generate AI Compliance Advice"):
+        licenses_for_ai = []
+
+        for result in st.session_state.scan_results:
+            licenses_for_ai.append(
+                {
+                    "file": result["File"],
+                    "license": result["License"],
+                    "spdx": result["SPDX"],
+                    "risk": result["Risk"]
+                }
+            )
+
+        with st.spinner("Generating AI compliance advice..."):
+            response = client.responses.create(
+                model="gpt-5",
+                input=f"""
+You are an OSS compliance advisor.
+
+Analyze the following repository license scan results.
+
+Important:
+- This is not legal advice.
+- Be practical and specific.
+- Explain the main compliance risks.
+- Give concrete next steps.
+- Keep the answer concise.
+
+Scan results:
+{licenses_for_ai}
+"""
+            )
+
+        st.session_state.ai_advice = response.output_text
+
+    if st.session_state.ai_advice:
+        st.subheader("AI Compliance Advice")
+
+        st.write(
+            st.session_state.ai_advice
+        )
 
     highest_risk = st.session_state.highest_risk
 
