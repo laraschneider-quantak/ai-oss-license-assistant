@@ -109,7 +109,6 @@ def get_risk_level(license_name):
 
 # Convert detected licenses to SPDX identifiers
 def get_spdx_id(license_name):
-
     spdx_map = {
         "MIT": "MIT",
         "Apache": "Apache-2.0",
@@ -126,6 +125,101 @@ def get_spdx_id(license_name):
         license_name,
         "UNKNOWN"
     )
+
+
+# Scan repository and store results in session state
+def scan_repository(repo_path, repo_name):
+    if not os.path.exists(repo_path):
+        st.error(
+            f"Repository not found: {repo_path}"
+        )
+        return
+
+    st.success(
+        f"Repository found: {repo_path}"
+    )
+
+    license_files = []
+
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [
+            d for d in dirs
+            if d not in [
+                ".git",
+                "__pycache__",
+                "venv",
+                "chroma_db"
+            ]
+        ]
+
+        for file in files:
+            if file.lower() in [
+                "license",
+                "license.txt",
+                "license.md",
+                "copying",
+                "copying.txt"
+            ]:
+                filepath = os.path.join(
+                    root,
+                    file
+                )
+
+                license_files.append(
+                    filepath
+                )
+
+    if not license_files:
+        st.warning("No license files found.")
+        return
+
+    highest_risk = "Unknown Risk"
+
+    risk_scores = {
+        "Unknown Risk": 0,
+        "Low Risk": 1,
+        "Medium Risk": 2,
+        "High Risk": 3,
+        "Very High Risk": 4
+    }
+
+    scan_results = []
+
+    for filepath in license_files:
+        with open(
+            filepath,
+            "r",
+            encoding="utf-8"
+        ) as license_file:
+            content = license_file.read()
+
+        detected_license = detect_repository_license(
+            content
+        )
+
+        risk_level = get_risk_level(
+            detected_license
+        )
+
+        spdx_id = get_spdx_id(
+            detected_license
+        )
+
+        scan_results.append(
+            {
+                "File": filepath,
+                "License": detected_license,
+                "SPDX": spdx_id,
+                "Risk": risk_level
+            }
+        )
+
+        if risk_scores[risk_level] > risk_scores[highest_risk]:
+            highest_risk = risk_level
+
+    st.session_state.scan_results = scan_results
+    st.session_state.highest_risk = highest_risk
+    st.session_state.repo_name = repo_name
 
 
 # Page title
@@ -158,7 +252,6 @@ query = st.chat_input(
 if query:
     detected_license_file = detect_license(query)
 
-    # If a specific license is mentioned, retrieve the exact document
     if detected_license_file:
         results = collection.get(
             ids=[detected_license_file]
@@ -170,7 +263,6 @@ if query:
 
         sources = [detected_license_file]
 
-    # Otherwise use semantic search
     else:
         results = collection.query(
             query_texts=[query],
@@ -183,7 +275,6 @@ if query:
 
         sources = results["ids"][0]
 
-    # Ask GPT using the retrieved context
     with st.spinner("Thinking..."):
         response = client.responses.create(
             model="gpt-5",
@@ -200,7 +291,6 @@ Question:
 """
         )
 
-    # Store question, answer and sources in chat history
     st.session_state.messages.append(
         {
             "question": query,
@@ -238,7 +328,7 @@ clone_path = os.path.join(
     repo_name
 )
 
-if st.button("Clone Repository"):
+if st.button("Clone & Scan Repository"):
 
     os.makedirs(
         "external_repos",
@@ -246,15 +336,12 @@ if st.button("Clone Repository"):
     )
 
     if os.path.exists(clone_path):
-
         st.info(
             f"Repository already exists: {clone_path}"
         )
 
     else:
-
         with st.spinner("Cloning repository..."):
-
             subprocess.run(
                 [
                     "git",
@@ -269,117 +356,10 @@ if st.button("Clone Repository"):
             f"Repository cloned to: {clone_path}"
         )
 
-# Repository path input
-repo_path = clone_path
-
-# Scan repository button
-if st.button("Scan Repository"):
-
-    if os.path.exists(repo_path):
-
-        st.success(
-            f"Repository found: {repo_path}"
-        )
-
-        license_files = []
-
-        # Walk through repository folders
-        for root, dirs, files in os.walk(repo_path):
-
-            # Skip folders that should not be scanned
-            dirs[:] = [
-                d for d in dirs
-                if d not in [
-                    ".git",
-                    "__pycache__",
-                    "venv",
-                    "chroma_db"
-                ]
-            ]
-
-            # Find common license file names
-            for file in files:
-
-                if file.lower() in [
-                    "license",
-                    "license.txt",
-                    "license.md",
-                    "copying",
-                    "copying.txt"
-                ]:
-
-                    filepath = os.path.join(
-                        root,
-                        file
-                    )
-
-                    license_files.append(
-                        filepath
-                    )
-
-        if license_files:
-
-            highest_risk = "Unknown Risk"
-
-            risk_scores = {
-                "Unknown Risk": 0,
-                "Low Risk": 1,
-                "Medium Risk": 2,
-                "High Risk": 3,
-                "Very High Risk": 4
-            }
-
-            scan_results = []
-
-            # Read each license file and detect license, SPDX ID and risk
-            for filepath in license_files:
-
-                with open(
-                    filepath,
-                    "r",
-                    encoding="utf-8"
-                ) as license_file:
-
-                    content = license_file.read()
-
-                detected_license = detect_repository_license(
-                    content
-                )
-
-                risk_level = get_risk_level(
-                    detected_license
-                )
-
-                spdx_id = get_spdx_id(
-                    detected_license
-                )
-
-                scan_results.append(
-                    {
-                        "File": filepath,
-                        "License": detected_license,
-                        "SPDX": spdx_id,
-                        "Risk": risk_level
-                    }
-                )
-
-                if risk_scores[risk_level] > risk_scores[highest_risk]:
-                    highest_risk = risk_level
-
-            # Store scan results so they survive Streamlit reruns
-            st.session_state.scan_results = scan_results
-            st.session_state.highest_risk = highest_risk
-            st.session_state.repo_name = repo_name
-
-        else:
-
-            st.warning("No license files found.")
-
-    else:
-
-        st.error(
-            f"Repository not found: {repo_path}"
-        )
+    scan_repository(
+        repo_path=clone_path,
+        repo_name=repo_name
+    )
 
 
 # Display latest scan results
@@ -414,7 +394,6 @@ if st.session_state.scan_results:
     }
 
     for result in st.session_state.scan_results:
-
         spdx_report["packages"].append(
             {
                 "name": result["File"],
@@ -456,4 +435,3 @@ if st.session_state.scan_results:
 
     else:
         st.warning("Overall Repository Risk: Unknown Risk")
-        
