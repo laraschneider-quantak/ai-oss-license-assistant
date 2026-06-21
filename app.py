@@ -418,32 +418,52 @@ if st.session_state.scan_results:
                 }
             )
 
-        with st.spinner("Generating AI compliance advice..."):
-            response = client.responses.create(
-                model="gpt-5",
-                input=f"""
-You are an OSS compliance advisor.
+        try:
 
-Analyze the following repository license scan results.
+            with st.spinner(
+                "Generating AI compliance advice..."
+            ):
+
+                response = client.responses.create(
+                    model="gpt-5",
+                    input=f"""
+You are a senior Open Source Compliance Consultant.
+
+Analyze the repository scan results and provide:
+
+1. Executive Summary
+2. Detected Licenses
+3. Risk Assessment
+4. Compliance Actions
+5. Legal Review Recommendation
+
+Maximum 300 words.
+Be concise and practical.
 
 Important:
 - This is not legal advice.
-- Be practical and specific.
-- Explain the main compliance risks.
-- Give concrete next steps.
-- Keep the answer concise.
+- Do not invent licenses.
+- Base your answer only on the scan results.
 
 Scan results:
 {licenses_for_ai}
 """
+                )
+
+            st.session_state.ai_advice = (
+                response.output_text
             )
 
-        st.session_state.ai_advice = response.output_text
+        except Exception as error:
+
+            st.error(
+                f"AI Compliance Advisor failed: {error}"
+            )
 
     if st.session_state.ai_advice:
         st.subheader("AI Compliance Advice")
 
-        st.write(
+        st.markdown(
             st.session_state.ai_advice
         )
 
