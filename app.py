@@ -6,6 +6,7 @@ import pandas as pd
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
+from datetime import datetime
 
 load_dotenv()
 
@@ -119,6 +120,26 @@ def get_spdx_id(license_name):
     )
 
 
+def get_policy_decision(license_name):
+    policy_map = {
+        "MIT": "Approved",
+        "Apache": "Approved",
+        "BSD": "Approved",
+        "MPL": "Review Required",
+        "EPL": "Review Required",
+        "CDDL": "Review Required",
+        "LGPL": "Review Required",
+        "GPL": "Legal Review Required",
+        "AGPL": "Blocked / High Review",
+        "Unknown": "Manual Review"
+    }
+
+    return policy_map.get(
+        license_name,
+        "Manual Review"
+    )
+
+
 def scan_repository(repo_path, repo_name):
     if not os.path.exists(repo_path):
         st.error(
@@ -196,12 +217,17 @@ def scan_repository(repo_path, repo_name):
             detected_license
         )
 
+        policy_decision = get_policy_decision(
+            detected_license
+        )
+
         scan_results.append(
             {
                 "File": filepath,
                 "License": detected_license,
                 "SPDX": spdx_id,
-                "Risk": risk_level
+                "Risk": risk_level,
+                "Policy Decision": policy_decision
             }
         )
 
@@ -371,19 +397,89 @@ if st.session_state.scan_results:
         key="csv_download"
     )
 
+    st.metric(
+        "License Files",
+        len(st.session_state.scan_results)
+    )
+
+    policy_priority = {
+        "Approved": 1,
+        "Review Required": 2,
+        "Manual Review": 3,
+        "Legal Review Required": 4,
+        "Blocked / High Review": 5
+    }
+
+    overall_policy = "Approved"
+
+    for result in st.session_state.scan_results:
+        current_policy = result[
+            "Policy Decision"
+        ]
+
+        if (
+            policy_priority[current_policy]
+            >
+            policy_priority[overall_policy]
+        ):
+            overall_policy = current_policy
+
+    if overall_policy == "Approved":
+        st.success(
+            f"Overall Policy Status: {overall_policy}"
+        )
+
+    elif overall_policy == "Review Required":
+        st.info(
+            f"Overall Policy Status: {overall_policy}"
+        )
+
+    elif overall_policy == "Manual Review":
+        st.warning(
+            f"Overall Policy Status: {overall_policy}"
+        )
+
+    elif overall_policy == "Legal Review Required":
+        st.error(
+            f"Overall Policy Status: {overall_policy}"
+        )
+
+    elif overall_policy == "Blocked / High Review":
+        st.error(
+            f"Overall Policy Status: {overall_policy}"
+        )
+
     spdx_report = {
         "spdxVersion": "SPDX-2.3",
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "dataLicense": "CC0-1.0",
         "name": st.session_state.repo_name,
         "documentNamespace":
             f"https://example.com/spdx/{st.session_state.repo_name}",
+
+        "creationInfo": {
+            "created": datetime.now().isoformat(),
+            "creators": [
+                "Tool: OSS Compliance Assistant"
+            ]
+        },
+
         "packages": []
     }
 
-    for result in st.session_state.scan_results:
+    for index, result in enumerate(
+        st.session_state.scan_results,
+        start=1
+    ):
         spdx_report["packages"].append(
             {
+                "SPDXID": f"SPDXRef-Package-{index}",
                 "name": result["File"],
-                "licenseConcluded": result["SPDX"]
+                "downloadLocation": "NOASSERTION",
+                "filesAnalyzed": False,
+                "licenseConcluded": result["SPDX"],
+                "licenseDeclared": result["SPDX"],
+                "copyrightText": "NOASSERTION"
             }
         )
 
@@ -400,11 +496,6 @@ if st.session_state.scan_results:
         key="spdx_download"
     )
 
-    st.metric(
-        "License Files",
-        len(st.session_state.scan_results)
-    )
-
     if st.button("Generate AI Compliance Advice"):
         licenses_for_ai = []
 
@@ -414,16 +505,15 @@ if st.session_state.scan_results:
                     "file": result["File"],
                     "license": result["License"],
                     "spdx": result["SPDX"],
-                    "risk": result["Risk"]
+                    "risk": result["Risk"],
+                    "policy": result["Policy Decision"]
                 }
             )
 
         try:
-
             with st.spinner(
                 "Generating AI compliance advice..."
             ):
-
                 response = client.responses.create(
                     model="gpt-5",
                     input=f"""
@@ -455,7 +545,6 @@ Scan results:
             )
 
         except Exception as error:
-
             st.error(
                 f"AI Compliance Advisor failed: {error}"
             )
