@@ -377,6 +377,81 @@ if st.button("Clone & Scan Repository"):
 
 
 if st.session_state.scan_results:
+
+    license_count = len(
+        st.session_state.scan_results
+    )
+
+    unique_licenses = len(
+        set(
+            result["License"]
+            for result in st.session_state.scan_results
+        )
+    )
+
+    high_risk_count = sum(
+        1
+        for result in st.session_state.scan_results
+        if result["Risk"] in [
+            "High Risk",
+            "Very High Risk"
+        ]
+    )
+
+    approved_count = sum(
+        1
+        for result in st.session_state.scan_results
+        if result["Policy Decision"]
+        == "Approved"
+    )
+
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric(
+        "License Files",
+        license_count
+    )
+
+    col2.metric(
+        "Unique Licenses",
+        unique_licenses
+    )
+
+    col3.metric(
+        "High Risk Licenses",
+        high_risk_count
+    )
+
+    col4.metric(
+        "Approved Licenses",
+        approved_count
+    )
+
+    compliance_score = 100
+
+    compliance_score -= high_risk_count * 25
+
+    review_count = sum(
+        1
+        for result in st.session_state.scan_results
+        if result["Policy Decision"] in [
+            "Review Required",
+            "Manual Review"
+        ]
+    )
+
+    compliance_score -= review_count * 10
+
+    if compliance_score < 0:
+        compliance_score = 0
+
+    st.metric(
+        "Compliance Score",
+        f"{compliance_score}%"
+    )
+
+
     st.subheader("License Scan Results")
 
     df = pd.DataFrame(
