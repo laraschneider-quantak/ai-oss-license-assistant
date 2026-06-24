@@ -452,6 +452,64 @@ if st.session_state.scan_results:
     )
 
 
+    risk_summary = {}
+
+    for result in st.session_state.scan_results:
+        risk = result["Risk"]
+
+        risk_summary[risk] = risk_summary.get(
+            risk,
+            0
+        ) + 1
+
+    st.subheader("Risk Summary")
+
+
+    risk_df = pd.DataFrame(
+        list(risk_summary.items()),
+        columns=[
+            "Risk Level",
+            "Count"
+        ]
+    )
+
+    st.dataframe(
+        risk_df,
+        use_container_width=True
+    )
+
+    policy_summary = {}
+
+    for result in st.session_state.scan_results:
+
+        policy = result[
+            "Policy Decision"
+        ]
+
+        policy_summary[policy] = (
+            policy_summary.get(
+                policy,
+                0
+            ) + 1
+        )
+
+    st.subheader(
+        "Policy Summary"
+    )
+
+    policy_df = pd.DataFrame(
+        list(policy_summary.items()),
+        columns=[
+            "Policy Decision",
+            "Count"
+        ]
+    )
+
+    st.dataframe(
+        policy_df,
+        use_container_width=True
+    )
+
     st.subheader("License Scan Results")
 
     df = pd.DataFrame(
