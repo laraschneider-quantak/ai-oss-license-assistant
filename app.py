@@ -7,6 +7,7 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
+from pdf_report import generate_pdf_report
 
 load_dotenv()
 
@@ -378,6 +379,12 @@ if st.button("Clone & Scan Repository"):
 
 if st.session_state.scan_results:
 
+    st.header("Compliance Dashboard")
+
+    st.caption(
+        "Repository compliance overview and governance metrics"
+    )
+
     license_count = len(
         st.session_state.scan_results
     )
@@ -401,10 +408,8 @@ if st.session_state.scan_results:
     approved_count = sum(
         1
         for result in st.session_state.scan_results
-        if result["Policy Decision"]
-        == "Approved"
+        if result["Policy Decision"] == "Approved"
     )
-
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -451,40 +456,22 @@ if st.session_state.scan_results:
         f"{compliance_score}%"
     )
 
-
     risk_summary = {}
 
     for result in st.session_state.scan_results:
         risk = result["Risk"]
 
-        risk_summary[risk] = risk_summary.get(
-            risk,
-            0
-        ) + 1
-
-    st.subheader("Risk Summary")
-
-
-    risk_df = pd.DataFrame(
-        list(risk_summary.items()),
-        columns=[
-            "Risk Level",
-            "Count"
-        ]
-    )
-
-    st.dataframe(
-        risk_df,
-        use_container_width=True
-    )
+        risk_summary[risk] = (
+            risk_summary.get(
+                risk,
+                0
+            ) + 1
+        )
 
     policy_summary = {}
 
     for result in st.session_state.scan_results:
-
-        policy = result[
-            "Policy Decision"
-        ]
+        policy = result["Policy Decision"]
 
         policy_summary[policy] = (
             policy_summary.get(
@@ -493,47 +480,39 @@ if st.session_state.scan_results:
             ) + 1
         )
 
-    st.subheader(
-        "Policy Summary"
-    )
+    summary_col1, summary_col2 = st.columns(2)
 
-    policy_df = pd.DataFrame(
-        list(policy_summary.items()),
-        columns=[
-            "Policy Decision",
-            "Count"
-        ]
-    )
+    with summary_col1:
+        st.subheader("Risk Summary")
 
-    st.dataframe(
-        policy_df,
-        use_container_width=True
-    )
+        risk_df = pd.DataFrame(
+            list(risk_summary.items()),
+            columns=[
+                "Risk Level",
+                "Count"
+            ]
+        )
 
-    st.subheader("License Scan Results")
+        st.dataframe(
+            risk_df,
+            use_container_width=True
+        )
 
-    df = pd.DataFrame(
-        st.session_state.scan_results
-    )
+    with summary_col2:
+        st.subheader("Policy Summary")
 
-    st.table(df)
+        policy_df = pd.DataFrame(
+            list(policy_summary.items()),
+            columns=[
+                "Policy Decision",
+                "Count"
+            ]
+        )
 
-    csv_data = df.to_csv(
-        index=False
-    ).encode("utf-8")
-
-    st.download_button(
-        label="Download CSV Report",
-        data=csv_data,
-        file_name="compliance_report.csv",
-        mime="text/csv",
-        key="csv_download"
-    )
-
-    st.metric(
-        "License Files",
-        len(st.session_state.scan_results)
-    )
+        st.dataframe(
+            policy_df,
+            use_container_width=True
+        )
 
     policy_priority = {
         "Approved": 1,
@@ -582,6 +561,26 @@ if st.session_state.scan_results:
             f"Overall Policy Status: {overall_policy}"
         )
 
+    st.subheader("License Scan Results")
+
+    df = pd.DataFrame(
+        st.session_state.scan_results
+    )
+
+    st.table(df)
+
+    csv_data = df.to_csv(
+        index=False
+    ).encode("utf-8")
+
+    st.download_button(
+        label="Download CSV Report",
+        data=csv_data,
+        file_name="compliance_report.csv",
+        mime="text/csv",
+        key="csv_download"
+    )
+
     spdx_report = {
         "spdxVersion": "SPDX-2.3",
         "SPDXID": "SPDXRef-DOCUMENT",
@@ -628,6 +627,31 @@ if st.session_state.scan_results:
         mime="application/json",
         key="spdx_download"
     )
+
+
+    pdf_path = "compliance_report.pdf"
+
+    generate_pdf_report(
+        report_path=pdf_path,
+        repo_name=st.session_state.repo_name,
+        compliance_score=compliance_score,
+        overall_policy=overall_policy,
+        overall_risk=st.session_state.highest_risk,
+        ai_advice=st.session_state.ai_advice
+    )
+
+    with open(
+        pdf_path,
+        "rb"
+        ) as pdf_file:
+
+        st.download_button(
+            label="Download PDF Report",
+            data=pdf_file,
+            file_name="compliance_report.pdf",
+            mime="application/pdf"
+        )
+
 
     if st.button("Generate AI Compliance Advice"):
         licenses_for_ai = []
