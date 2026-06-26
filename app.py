@@ -3,17 +3,17 @@ import subprocess
 import chromadb
 import streamlit as st
 import pandas as pd
-import json
 from dotenv import load_dotenv
 from openai import OpenAI
-from datetime import datetime
+
 from pdf_report import generate_pdf_report
-from policy_engine import (
-    get_risk_level,
-    get_spdx_id,
-    get_policy_decision
-)
 from scanner import scan_repository
+from spdx_export import generate_spdx_report
+from ai_advisor import generate_ai_compliance_advice
+from dashboard import (
+    calculate_compliance_score,
+    calculate_overall_policy
+)
 
 load_dotenv()
 
@@ -245,23 +245,9 @@ if st.session_state.scan_results:
         approved_count
     )
 
-    compliance_score = 100
-
-    compliance_score -= high_risk_count * 25
-
-    review_count = sum(
-        1
-        for result in st.session_state.scan_results
-        if result["Policy Decision"] in [
-            "Review Required",
-            "Manual Review"
-        ]
+    compliance_score = calculate_compliance_score(
+        st.session_state.scan_results
     )
-
-    compliance_score -= review_count * 10
-
-    if compliance_score < 0:
-        compliance_score = 0
 
     st.metric(
         "Compliance Score",
@@ -326,52 +312,9 @@ if st.session_state.scan_results:
             use_container_width=True
         )
 
-    policy_priority = {
-        "Approved": 1,
-        "Review Required": 2,
-        "Manual Review": 3,
-        "Legal Review Required": 4,
-        "Blocked / High Review": 5
-    }
-
-    overall_policy = "Approved"
-
-    for result in st.session_state.scan_results:
-        current_policy = result[
-            "Policy Decision"
-        ]
-
-        if (
-            policy_priority[current_policy]
-            >
-            policy_priority[overall_policy]
-        ):
-            overall_policy = current_policy
-
-    if overall_policy == "Approved":
-        st.success(
-            f"Overall Policy Status: {overall_policy}"
-        )
-
-    elif overall_policy == "Review Required":
-        st.info(
-            f"Overall Policy Status: {overall_policy}"
-        )
-
-    elif overall_policy == "Manual Review":
-        st.warning(
-            f"Overall Policy Status: {overall_policy}"
-        )
-
-    elif overall_policy == "Legal Review Required":
-        st.error(
-            f"Overall Policy Status: {overall_policy}"
-        )
-
-    elif overall_policy == "Blocked / High Review":
-        st.error(
-            f"Overall Policy Status: {overall_policy}"
-        )
+    overall_policy = calculate_overall_policy(
+        st.session_state.scan_results
+    )
 
     st.subheader("License Scan Results")
 
@@ -393,43 +336,9 @@ if st.session_state.scan_results:
         key="csv_download"
     )
 
-    spdx_report = {
-        "spdxVersion": "SPDX-2.3",
-        "SPDXID": "SPDXRef-DOCUMENT",
-        "dataLicense": "CC0-1.0",
-        "name": st.session_state.repo_name,
-        "documentNamespace":
-            f"https://example.com/spdx/{st.session_state.repo_name}",
-
-        "creationInfo": {
-            "created": datetime.now().isoformat(),
-            "creators": [
-                "Tool: OSS Compliance Assistant"
-            ]
-        },
-
-        "packages": []
-    }
-
-    for index, result in enumerate(
-        st.session_state.scan_results,
-        start=1
-    ):
-        spdx_report["packages"].append(
-            {
-                "SPDXID": f"SPDXRef-Package-{index}",
-                "name": result["File"],
-                "downloadLocation": "NOASSERTION",
-                "filesAnalyzed": False,
-                "licenseConcluded": result["SPDX"],
-                "licenseDeclared": result["SPDX"],
-                "copyrightText": "NOASSERTION"
-            }
-        )
-
-    spdx_json = json.dumps(
-        spdx_report,
-        indent=4
+    spdx_json = generate_spdx_report(
+        repo_name=st.session_state.repo_name,
+        scan_results=st.session_state.scan_results
     )
 
     st.download_button(
@@ -439,7 +348,6 @@ if st.session_state.scan_results:
         mime="application/json",
         key="spdx_download"
     )
-
 
     pdf_path = "compliance_report.pdf"
 
@@ -455,7 +363,7 @@ if st.session_state.scan_results:
     with open(
         pdf_path,
         "rb"
-        ) as pdf_file:
+    ) as pdf_file:
 
         st.download_button(
             label="Download PDF Report",
@@ -464,54 +372,18 @@ if st.session_state.scan_results:
             mime="application/pdf"
         )
 
-
     if st.button("Generate AI Compliance Advice"):
-        licenses_for_ai = []
-
-        for result in st.session_state.scan_results:
-            licenses_for_ai.append(
-                {
-                    "file": result["File"],
-                    "license": result["License"],
-                    "spdx": result["SPDX"],
-                    "risk": result["Risk"],
-                    "policy": result["Policy Decision"]
-                }
-            )
 
         try:
             with st.spinner(
                 "Generating AI compliance advice..."
             ):
-                response = client.responses.create(
-                    model="gpt-5",
-                    input=f"""
-You are a senior Open Source Compliance Consultant.
-
-Analyze the repository scan results and provide:
-
-1. Executive Summary
-2. Detected Licenses
-3. Risk Assessment
-4. Compliance Actions
-5. Legal Review Recommendation
-
-Maximum 300 words.
-Be concise and practical.
-
-Important:
-- This is not legal advice.
-- Do not invent licenses.
-- Base your answer only on the scan results.
-
-Scan results:
-{licenses_for_ai}
-"""
+                st.session_state.ai_advice = (
+                    generate_ai_compliance_advice(
+                        client=client,
+                        scan_results=st.session_state.scan_results
+                    )
                 )
-
-            st.session_state.ai_advice = (
-                response.output_text
-            )
 
         except Exception as error:
             st.error(
