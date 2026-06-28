@@ -12,8 +12,12 @@ from spdx_export import generate_spdx_report
 from ai_advisor import generate_ai_compliance_advice
 from dashboard import (
     calculate_compliance_score,
-    calculate_overall_policy
+    calculate_overall_policy,
+    calculate_risk_summary,
+    calculate_policy_summary,
+    calculate_dashboard_metrics
 )
+
 
 load_dotenv()
 
@@ -197,31 +201,17 @@ if st.session_state.scan_results:
         "Repository compliance overview and governance metrics"
     )
 
-    license_count = len(
+
+    (
+        license_count,
+        unique_licenses,
+        high_risk_count,
+        approved_count
+    ) = calculate_dashboard_metrics(
         st.session_state.scan_results
     )
 
-    unique_licenses = len(
-        set(
-            result["License"]
-            for result in st.session_state.scan_results
-        )
-    )
 
-    high_risk_count = sum(
-        1
-        for result in st.session_state.scan_results
-        if result["Risk"] in [
-            "High Risk",
-            "Very High Risk"
-        ]
-    )
-
-    approved_count = sum(
-        1
-        for result in st.session_state.scan_results
-        if result["Policy Decision"] == "Approved"
-    )
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -254,29 +244,13 @@ if st.session_state.scan_results:
         f"{compliance_score}%"
     )
 
-    risk_summary = {}
+    risk_summary = calculate_risk_summary(
+        st.session_state.scan_results
+    )
 
-    for result in st.session_state.scan_results:
-        risk = result["Risk"]
-
-        risk_summary[risk] = (
-            risk_summary.get(
-                risk,
-                0
-            ) + 1
-        )
-
-    policy_summary = {}
-
-    for result in st.session_state.scan_results:
-        policy = result["Policy Decision"]
-
-        policy_summary[policy] = (
-            policy_summary.get(
-                policy,
-                0
-            ) + 1
-        )
+    policy_summary = calculate_policy_summary(
+        st.session_state.scan_results
+    )
 
     summary_col1, summary_col2 = st.columns(2)
 
