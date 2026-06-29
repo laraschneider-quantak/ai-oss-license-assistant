@@ -1,10 +1,14 @@
-from openai import OpenAI
+from logger import logger
 
 
 def generate_ai_compliance_advice(
     client,
     scan_results
 ):
+    logger.info(
+        "Generating AI compliance advice"
+    )
+
     licenses_for_ai = []
 
     for result in scan_results:
@@ -42,6 +46,10 @@ Important:
 Scan results:
 {licenses_for_ai}
 """
+    )
+
+    logger.info(
+        "AI compliance advice generated successfully"
     )
 
     return response.output_text
