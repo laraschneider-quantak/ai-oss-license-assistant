@@ -18,12 +18,23 @@ from dashboard import (
     calculate_dashboard_metrics
 )
 
+from config import (
+    OPENAI_API_KEY,
+    CHROMA_DB_PATH,
+    EXTERNAL_REPOS_PATH,
+    PDF_REPORT_NAME,
+    SPDX_REPORT_NAME
+)
+
+from logger import logger
 
 load_dotenv()
 
+
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=OPENAI_API_KEY
 )
+
 
 chroma_client = chromadb.PersistentClient(
     path="chroma_db"
@@ -156,13 +167,14 @@ github_url = st.text_input(
 repo_name = github_url.rstrip("/").split("/")[-1].replace(".git", "")
 
 clone_path = os.path.join(
-    "external_repos",
+    EXTERNAL_REPOS_PATH,
     repo_name
 )
 
 if st.button("Clone & Scan Repository"):
+
     os.makedirs(
-        "external_repos",
+        EXTERNAL_REPOS_PATH,
         exist_ok=True
     )
 
@@ -185,6 +197,10 @@ if st.button("Clone & Scan Repository"):
 
         st.success(
             f"Repository cloned to: {clone_path}"
+        )
+
+        logger.info(
+            f"Repository cloned: {repo_name}"
         )
 
     scan_repository(
@@ -318,12 +334,12 @@ if st.session_state.scan_results:
     st.download_button(
         label="Download SPDX Report",
         data=spdx_json,
-        file_name="spdx_report.json",
+        file_name=SPDX_REPORT_NAME,
         mime="application/json",
         key="spdx_download"
     )
 
-    pdf_path = "compliance_report.pdf"
+    pdf_path = PDF_REPORT_NAME
 
     generate_pdf_report(
         report_path=pdf_path,
@@ -342,7 +358,7 @@ if st.session_state.scan_results:
         st.download_button(
             label="Download PDF Report",
             data=pdf_file,
-            file_name="compliance_report.pdf",
+            file_name=PDF_REPORT_NAME,
             mime="application/pdf"
         )
 
@@ -352,6 +368,10 @@ if st.session_state.scan_results:
             with st.spinner(
                 "Generating AI compliance advice..."
             ):
+                logger.info(
+                    "Generating AI compliance advice"
+                )
+                
                 st.session_state.ai_advice = (
                     generate_ai_compliance_advice(
                         client=client,
