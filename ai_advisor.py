@@ -1,29 +1,40 @@
 from logger import logger
+from security_filter import sanitize_scan_results
+from audit_logger import log_ai_request
+from config import AI_BACKEND, AI_MODEL
 
 
 def generate_ai_compliance_advice(
     client,
     scan_results
 ):
+    
+    sanitized_results = sanitize_scan_results(
+        scan_results
+    )
+    secrets_detected = sum(
+        1
+        for result in sanitized_results
+        if "security_warning" in result
+    )
+
+    audit_data = {
+        "backend": AI_BACKEND,
+        "model": AI_MODEL
+        "files_processed": len(sanitized_results),
+        "secrets_detected": secrets_detected,
+        "sanitized": True
+    }
+
+    log_ai_request(audit_data)
+  
+    
     logger.info(
         "Generating AI compliance advice"
     )
 
-    licenses_for_ai = []
-
-    for result in scan_results:
-        licenses_for_ai.append(
-            {
-                "file": result["File"],
-                "license": result["License"],
-                "spdx": result["SPDX"],
-                "risk": result["Risk"],
-                "policy": result["Policy Decision"]
-            }
-        )
-
     response = client.responses.create(
-        model="gpt-5",
+        model=AI_MODEL,
         input=f"""
 You are a senior Open Source Compliance Consultant.
 
@@ -44,7 +55,7 @@ Important:
 - Base your answer only on the scan results.
 
 Scan results:
-{licenses_for_ai}
+{sanitized_results}
 """
     )
 
