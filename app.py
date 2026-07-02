@@ -26,6 +26,8 @@ from config import (
     SPDX_REPORT_NAME
 )
 
+from config import AI_BACKEND
+
 from logger import logger
 
 load_dotenv()

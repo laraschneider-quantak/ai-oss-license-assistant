@@ -20,3 +20,7 @@ PDF_REPORT_NAME = "compliance_report.pdf"
 SPDX_REPORT_NAME = "spdx_report.json"
 
 LOG_FILE = "license_scanner.log"
+
+AI_BACKEND = "openai"
+
+AI_MODEL = "gpt-5"
