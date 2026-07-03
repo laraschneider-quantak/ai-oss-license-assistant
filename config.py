@@ -21,6 +21,6 @@ SPDX_REPORT_NAME = "spdx_report.json"
 
 LOG_FILE = "license_scanner.log"
 
-AI_BACKEND = "openai"
+AI_BACKEND = "langchain"
 
 AI_MODEL = "gpt-5"
