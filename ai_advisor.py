@@ -1,10 +1,12 @@
 from logger import logger
 from security_filter import sanitize_scan_results
 from audit_logger import log_ai_request
-from config import AI_BACKEND, AI_MODEL
+from config import AI_BACKEND, AI_MODEL, AI_PROMPT_VERSION
 from langchain_advisor import generate_langchain_compliance_advice
 from openai import OpenAI
 from config import OPENAI_API_KEY
+
+
 
 client = OpenAI(
     api_key=OPENAI_API_KEY
@@ -67,6 +69,7 @@ def generate_compliance_advice(scan_results):
     audit_data = {
         "backend": AI_BACKEND,
         "model": AI_MODEL,
+        "prompt_version": AI_PROMPT_VERSION,
         "files_processed": len(sanitized_results),
         "secrets_detected": secrets_detected,
         "sanitized": True

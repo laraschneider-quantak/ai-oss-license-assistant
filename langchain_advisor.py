@@ -1,4 +1,7 @@
-from langchain_core.prompts import ChatPromptTemplate
+from prompts.prompt_registry import (
+    PROMPTS,
+    DEFAULT_PROMPT_VERSION
+)
 
 from langchain_openai import ChatOpenAI
 
@@ -7,30 +10,22 @@ from config import (
     AI_MODEL
 )
 
-PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            (
-                "You are a senior Open Source Compliance Consultant."
-            )
-        ),
-        (
-            "human",
-            (
-                "Analyze the following sanitized scan results:\n\n"
-                "{scan_results}"
-            )
-        )
-    ]
-)
+from config import AI_PROMPT_VERSION
 
 LLM = ChatOpenAI(
     model=AI_MODEL,
     api_key=OPENAI_API_KEY
 )
 
-CHAIN = PROMPT | LLM
+if AI_PROMPT_VERSION not in PROMPTS["compliance"]:
+    raise ValueError(
+        f"Unsupported prompt version: {AI_PROMPT_VERSION}"
+    )
+
+CHAIN = (
+    PROMPTS["compliance"][AI_PROMPT_VERSION]
+    | LLM
+)
 
 def generate_langchain_compliance_advice(
     scan_results

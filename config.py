@@ -24,3 +24,5 @@ LOG_FILE = "license_scanner.log"
 AI_BACKEND = "langchain"
 
 AI_MODEL = "gpt-5"
+
+AI_PROMPT_VERSION = "v1"
