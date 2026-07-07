@@ -26,3 +26,5 @@ AI_BACKEND = "langchain"
 AI_MODEL = "gpt-5"
 
 AI_PROMPT_VERSION = "v1"
+
+KNOWLEDGE_FOLDER = "knowledge"
