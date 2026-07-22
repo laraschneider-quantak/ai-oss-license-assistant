@@ -2,6 +2,8 @@ import os
 
 from config import KNOWLEDGE_FOLDER
 
+from config import SUPPORTED_KNOWLEDGE_EXTENSIONS
+
 
 def load_knowledge_documents():
     """
@@ -16,9 +18,15 @@ def load_knowledge_documents():
 
     for filename in os.listdir(KNOWLEDGE_FOLDER):
 
-        if not filename.endswith(".txt"):
+        
+        if not any(
+            filename.endswith(extension)
+            for extension in SUPPORTED_KNOWLEDGE_EXTENSIONS
+        ):
             continue
         
+
+
         filepath = os.path.join(KNOWLEDGE_FOLDER, filename)
 
         if not os.path.isfile(filepath):
