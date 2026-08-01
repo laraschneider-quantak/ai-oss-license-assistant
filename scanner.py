@@ -49,11 +49,13 @@ def scan_repository(repo_path, repo_name):
         st.error(
             f"Repository not found: {repo_path}"
         )
-        return
-
-    st.success(
-        f"Repository found: {repo_path}"
-    )
+        return {
+            "success": False,
+            "message": f"Repository not found: {repo_path}",
+            "scan_results": [],
+            "highest_risk": "Unknown Risk",
+            "repo_name": repo_name,
+        }
 
     license_files = []
 
@@ -86,9 +88,14 @@ def scan_repository(repo_path, repo_name):
                 )
 
     if not license_files:
-        st.warning("No license files found.")
-        return
-
+        return {
+            "success": False,
+            "message": "No license files found.",
+            "scan_results": [],
+            "highest_risk": "Unknown Risk",
+            "repo_name": repo_name,
+        }
+        s
     highest_risk = "Unknown Risk"
 
     risk_scores = {
@@ -138,7 +145,12 @@ def scan_repository(repo_path, repo_name):
         if risk_scores[risk_level] > risk_scores[highest_risk]:
             highest_risk = risk_level
 
-    st.session_state.scan_results = scan_results
-    st.session_state.highest_risk = highest_risk
-    st.session_state.repo_name = repo_name
-    st.session_state.ai_advice = ""
+        return {
+            "success": True,
+            "message": "Repository scanned successfully.",
+            "scan_results": scan_results,
+            "highest_risk": highest_risk,
+            "repo_name": repo_name,
+        }
+
+    

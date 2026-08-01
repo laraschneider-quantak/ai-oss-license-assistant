@@ -24,3 +24,13 @@ LOG_FILE = "license_scanner.log"
 AI_BACKEND = "langchain"
 
 AI_MODEL = "gpt-5"
+
+AI_PROMPT_VERSION = "v1"
+
+KNOWLEDGE_FOLDER = "knowledge"
+
+SUPPORTED_KNOWLEDGE_EXTENSIONS = [
+    ".txt"
+]
+
+MAX_RAG_DOCUMENTS = 5
