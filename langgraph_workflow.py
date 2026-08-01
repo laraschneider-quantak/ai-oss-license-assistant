@@ -79,15 +79,20 @@ def route_after_scan(
     state: ComplianceState,
 ) -> str:
     """
-    Decide whether SPDX generation should continue.
+    Route the workflow according to scan success and risk.
     """
 
     scan_result = state["scan_result"]
 
-    if scan_result["success"]:
-        return "generate_spdx"
+       
 
-    return "end"
+    if not scan_result["success"]:
+        return "end"
+
+    if scan_result["highest_risk"] == "Low Risk":
+        return "generate_spdx"
+    
+    return "generate_ai_advice"
 
 
 def build_compliance_graph():
@@ -121,7 +126,8 @@ def build_compliance_graph():
         "scan_repository",
         route_after_scan,
         {
-            "generate_spdx": "generate_ai_advice",
+            "generate_spdx": "generate_spdx",
+            "generate_ai_advice": "generate_ai_advice",
             "end": END,
         },
     )
@@ -145,7 +151,7 @@ if __name__ == "__main__":
     result = graph.invoke(
         {
             "repo_path": r"C:\AI-Projects\license_scanner\test_repo",
-            "repo_name": "Test-Repo",
+            "repo_name": "test_repo",
         }
     )
 
