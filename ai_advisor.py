@@ -144,7 +144,7 @@ def generate_compliance_advice(
     else:
         advice = generate_ai_compliance_advice(
             client,
-            anitized_results
+            sanitized_results
         )
 
     normalized_advice = normalize_compliance_advice(

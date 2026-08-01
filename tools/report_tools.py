@@ -1,9 +1,12 @@
 from langchain.tools import tool
 
+from spdx_service import generate_spdx_report
+
 
 @tool
 def generate_spdx_tool(
-    repo_name: str
+    repo_name: str,
+    scan_results: list[dict],
 ) -> str:
     """
     Generate an SPDX report for a previously scanned repository.
@@ -14,11 +17,7 @@ def generate_spdx_tool(
 
     print(">>> generate_spdx_tool called")
 
-    return (
-    f"SPDX report generated for "
-    f"{repo_name}"
-)
-
-    return "THIS TEXT CAN ONLY COME FROM THE TOOL"
-
- 
+    return generate_spdx_report(
+        repo_name=repo_name,
+        scan_results=scan_results,
+    )
