@@ -79,19 +79,18 @@ def route_after_scan(
     state: ComplianceState,
 ) -> str:
     """
-    Route the workflow according to scan success and risk.
+    Route the workflow according to scan success
+    and the strictest policy decision.
     """
 
     scan_result = state["scan_result"]
 
-       
-
     if not scan_result["success"]:
         return "end"
 
-    if scan_result["highest_risk"] == "Low Risk":
+    if scan_result["highest_policy"] == "Approved":
         return "generate_spdx"
-    
+
     return "generate_ai_advice"
 
 
@@ -150,9 +149,11 @@ if __name__ == "__main__":
 
     result = graph.invoke(
         {
-            "repo_path": r"C:\AI-Projects\license_scanner\test_repo",
-            "repo_name": "test_repo",
+            "repo_path": (
+                r"C:\AI-Projects\license_scanner"
+                r"\external_repos\requests"
+            ),
+            "repo_name": "requests",
         }
     )
-
     print(result)

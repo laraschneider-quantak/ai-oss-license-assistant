@@ -44,16 +44,17 @@ def detect_repository_license(text):
     return "Unknown"
 
 
-def scan_repository(repo_path, repo_name):
+def scan_repository(
+    repo_path,
+    repo_name,
+):
     if not os.path.exists(repo_path):
-        st.error(
-            f"Repository not found: {repo_path}"
-        )
         return {
             "success": False,
             "message": f"Repository not found: {repo_path}",
             "scan_results": [],
             "highest_risk": "Unknown Risk",
+            "highest_policy": "Manual Review",
             "repo_name": repo_name,
         }
 
@@ -61,12 +62,13 @@ def scan_repository(repo_path, repo_name):
 
     for root, dirs, files in os.walk(repo_path):
         dirs[:] = [
-            d for d in dirs
-            if d not in [
+            directory
+            for directory in dirs
+            if directory not in [
                 ".git",
                 "__pycache__",
                 "venv",
-                "chroma_db"
+                "chroma_db",
             ]
         ]
 
@@ -76,11 +78,11 @@ def scan_repository(repo_path, repo_name):
                 "license.txt",
                 "license.md",
                 "copying",
-                "copying.txt"
+                "copying.txt",
             ]:
                 filepath = os.path.join(
                     root,
-                    file
+                    file,
                 )
 
                 license_files.append(
@@ -93,17 +95,27 @@ def scan_repository(repo_path, repo_name):
             "message": "No license files found.",
             "scan_results": [],
             "highest_risk": "Unknown Risk",
+            "highest_policy": "Manual Review",
             "repo_name": repo_name,
         }
-        s
+
     highest_risk = "Unknown Risk"
+    highest_policy = "Approved"
 
     risk_scores = {
         "Unknown Risk": 0,
         "Low Risk": 1,
         "Medium Risk": 2,
         "High Risk": 3,
-        "Very High Risk": 4
+        "Very High Risk": 4,
+    }
+
+    policy_scores = {
+        "Approved": 0,
+        "Review Required": 1,
+        "Manual Review": 2,
+        "Legal Review Required": 3,
+        "Blocked / High Review": 4,
     }
 
     scan_results = []
@@ -112,7 +124,7 @@ def scan_repository(repo_path, repo_name):
         with open(
             filepath,
             "r",
-            encoding="utf-8"
+            encoding="utf-8",
         ) as license_file:
             content = license_file.read()
 
@@ -138,19 +150,27 @@ def scan_repository(repo_path, repo_name):
                 "License": detected_license,
                 "SPDX": spdx_id,
                 "Risk": risk_level,
-                "Policy Decision": policy_decision
+                "Policy Decision": policy_decision,
             }
         )
 
-        if risk_scores[risk_level] > risk_scores[highest_risk]:
+        if (
+            risk_scores[risk_level]
+            > risk_scores[highest_risk]
+        ):
             highest_risk = risk_level
 
-        return {
-            "success": True,
-            "message": "Repository scanned successfully.",
-            "scan_results": scan_results,
-            "highest_risk": highest_risk,
-            "repo_name": repo_name,
-        }
+        if (
+            policy_scores[policy_decision]
+            > policy_scores[highest_policy]
+        ):
+            highest_policy = policy_decision
 
-    
+    return {
+        "success": True,
+        "message": "Repository scanned successfully.",
+        "scan_results": scan_results,
+        "highest_risk": highest_risk,
+        "highest_policy": highest_policy,
+        "repo_name": repo_name,
+    }
