@@ -5,8 +5,8 @@ from scanner_service import run_repository_scan
 @tool
 def scan_repository_tool(
     repo_path: str,
-    repo_name: str
-) -> str:
+    repo_name: str,
+) -> dict:
     """
     Scan a local Open Source repository for license files.
 
@@ -22,5 +22,7 @@ def scan_repository_tool(
         repo_path=repo_path,
         repo_name=repo_name,
     )
+
+    
 
     return scan_result

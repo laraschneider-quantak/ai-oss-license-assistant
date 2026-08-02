@@ -15,6 +15,12 @@ from tools.report_tools import (
     generate_spdx_tool,
 )
 
+from tools.advice_tools import (
+    generate_ai_advice_tool,
+)
+
+from langchain_core.messages import AIMessage, ToolMessage
+
 LLM = ChatOpenAI(
     model=AI_MODEL,
     api_key=OPENAI_API_KEY,
@@ -22,6 +28,7 @@ LLM = ChatOpenAI(
 
 TOOLS = [
     scan_repository_tool,
+    generate_ai_advice_tool,
     generate_spdx_tool,
 ]
 
@@ -46,19 +53,22 @@ if __name__ == "__main__":
                 {
                     "role": "user",
                     "content": (
-                         "Scan the repository at external_repos/requests "
-                         "and then generate an SPDX report for it."
+                        "Scan the repository at "
+                        "external_repos/requests "
+                        "and generate an SPDX report. "
+                        "Do not provide AI compliance advice."
                     ),
                 }
             ]
         }
     )
-
+    
+  
     final_message = result["messages"][-1]
 
     print(
-        "FINAL RESPONSE:"
-    )
+            "FINAL RESPONSE:"
+        )
     print(
-        final_message.content
-    )
+            final_message.content
+        )
