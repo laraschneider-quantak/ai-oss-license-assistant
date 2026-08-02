@@ -75,23 +75,29 @@ def generate_ai_advice_node(
         "ai_advice": advice,
     }
 
+
 def route_after_scan(
     state: ComplianceState,
-) -> str:
+) -> str | list[str]:
     """
-    Route the workflow according to scan success
-    and the strictest policy decision.
+    Route according to scan success and policy decision.
+
+    Approved repositories require only SPDX generation.
+    Review cases require AI advice and SPDX generation in parallel.
     """
 
     scan_result = state["scan_result"]
 
     if not scan_result["success"]:
-        return "end"
+        return END
 
     if scan_result["highest_policy"] == "Approved":
         return "generate_spdx"
 
-    return "generate_ai_advice"
+    return [
+        "generate_ai_advice",
+        "generate_spdx",
+    ]
 
 
 def build_compliance_graph():
