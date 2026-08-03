@@ -1,4 +1,6 @@
-from langchain.tools import tool
+from langchain.messages import ToolMessage
+from langchain.tools import ToolRuntime, tool
+from langgraph.types import Command
 
 from scanner_service import run_repository_scan
 
@@ -6,7 +8,8 @@ from scanner_service import run_repository_scan
 def scan_repository_tool(
     repo_path: str,
     repo_name: str,
-) -> dict:
+    runtime: ToolRuntime,
+) -> Command:
     """
     Scan a local Open Source repository for license files.
 
@@ -23,6 +26,16 @@ def scan_repository_tool(
         repo_name=repo_name,
     )
 
-    
-
-    return scan_result
+    return Command(
+        update={
+            "repo_path": repo_path,
+            "repo_name": repo_name,
+            "scan_result": scan_result,
+            "messages": [
+                ToolMessage(
+                    content=str(scan_result),
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ],
+        }
+    )

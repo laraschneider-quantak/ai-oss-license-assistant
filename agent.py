@@ -9,7 +9,10 @@ from tools.repository_tools import (
     scan_repository_tool,
 )
 
-from langchain.agents import create_agent
+from langchain.agents import (
+    AgentState,
+    create_agent,
+)
 
 from tools.report_tools import (
     generate_spdx_tool,
@@ -20,6 +23,11 @@ from tools.advice_tools import (
 )
 
 from langgraph.checkpoint.memory import InMemorySaver
+
+class ComplianceAgentState(AgentState):
+    repo_path: str
+    repo_name: str
+    scan_result: dict
 
 LLM = ChatOpenAI(
     model=AI_MODEL,
@@ -50,6 +58,7 @@ AGENT = create_agent(
         "generate_spdx_tool."
     ),
     checkpointer=MEMORY,
+    state_schema=ComplianceAgentState,
 )
 
 if __name__ == "__main__":
@@ -94,3 +103,37 @@ if __name__ == "__main__":
 
     print("\nSECOND RESPONSE:")
     print(second_result["messages"][-1].content)
+
+    state_snapshot = AGENT.get_state(
+        config
+    )
+
+    messages = state_snapshot.values.get(
+        "messages",
+        [],
+    )
+
+    print("\nSTATE SUMMARY:")
+    print(
+        f"Stored messages: {len(messages)}"
+    )
+
+    for index, message in enumerate(messages):
+        print(
+            f"{index}: {type(message).__name__}"
+        )
+
+    print(
+        "repo_path:",
+        state_snapshot.values.get("repo_path"),
+    )
+
+    print(
+        "repo_name:",
+        state_snapshot.values.get("repo_name"),
+    )
+
+    print(
+        "scan_result:",
+        state_snapshot.values.get("scan_result"),
+    )
