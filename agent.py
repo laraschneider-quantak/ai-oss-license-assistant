@@ -28,6 +28,9 @@ class ComplianceAgentState(AgentState):
     repo_path: str
     repo_name: str
     scan_result: dict
+    highest_risk: str
+    highest_policy: str
+    detected_licenses: list[str]
 
 LLM = ChatOpenAI(
     model=AI_MODEL,
@@ -92,9 +95,9 @@ if __name__ == "__main__":
                 {
                     "role": "user",
                     "content": (
-                        "Now generate an SPDX report "
-                        "for that repository."
-                    ),
+                        "What is the highest policy decision "
+                        "and which licenses were detected?"
+                    ),               
                 }
             ]
         },
@@ -108,32 +111,17 @@ if __name__ == "__main__":
         config
     )
 
-    messages = state_snapshot.values.get(
-        "messages",
-        [],
-    )
-
-    print("\nSTATE SUMMARY:")
     print(
-        f"Stored messages: {len(messages)}"
-    )
-
-    for index, message in enumerate(messages):
-        print(
-            f"{index}: {type(message).__name__}"
-        )
-
-    print(
-        "repo_path:",
-        state_snapshot.values.get("repo_path"),
+        "highest_risk:",
+        state_snapshot.values.get("highest_risk"),
     )
 
     print(
-        "repo_name:",
-        state_snapshot.values.get("repo_name"),
+        "highest_policy:",
+        state_snapshot.values.get("highest_policy"),
     )
 
     print(
-        "scan_result:",
-        state_snapshot.values.get("scan_result"),
+        "detected_licenses:",
+        state_snapshot.values.get("detected_licenses"),
     )
