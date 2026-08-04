@@ -24,6 +24,8 @@ from tools.advice_tools import (
 
 from langgraph.checkpoint.memory import InMemorySaver
 
+from langchain.agents.middleware import before_agent
+
 class ComplianceAgentState(AgentState):
     repo_path: str
     repo_name: str
@@ -31,6 +33,30 @@ class ComplianceAgentState(AgentState):
     highest_risk: str
     highest_policy: str
     detected_licenses: list[str]
+
+
+@before_agent
+def log_agent_request(
+    state: ComplianceAgentState,
+    runtime,
+) -> None:
+    """
+    Log each incoming agent request.
+    """
+
+    messages = state.get(
+        "messages",
+        [],
+    )
+
+    print(
+        ">>> MIDDLEWARE: agent request received"
+    )
+
+    print(
+        ">>> MIDDLEWARE: stored messages:",
+        len(messages),
+    )
 
 LLM = ChatOpenAI(
     model=AI_MODEL,
@@ -62,6 +88,9 @@ AGENT = create_agent(
     ),
     checkpointer=MEMORY,
     state_schema=ComplianceAgentState,
+    middleware=[
+        log_agent_request,
+    ],
 )
 
 if __name__ == "__main__":
@@ -106,22 +135,3 @@ if __name__ == "__main__":
 
     print("\nSECOND RESPONSE:")
     print(second_result["messages"][-1].content)
-
-    state_snapshot = AGENT.get_state(
-        config
-    )
-
-    print(
-        "highest_risk:",
-        state_snapshot.values.get("highest_risk"),
-    )
-
-    print(
-        "highest_policy:",
-        state_snapshot.values.get("highest_policy"),
-    )
-
-    print(
-        "detected_licenses:",
-        state_snapshot.values.get("detected_licenses"),
-    )
