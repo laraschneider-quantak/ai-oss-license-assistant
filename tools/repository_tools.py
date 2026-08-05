@@ -26,11 +26,21 @@ def scan_repository_tool(
         repo_name=repo_name,
     )
 
+    detected_licenses = sorted(
+        {
+            result["SPDX"]
+            for result in scan_result["scan_results"]
+        }
+    )
+
     return Command(
         update={
             "repo_path": repo_path,
             "repo_name": repo_name,
             "scan_result": scan_result,
+            "highest_risk": scan_result["highest_risk"],
+            "highest_policy": scan_result["highest_policy"],
+            "detected_licenses": detected_licenses,
             "messages": [
                 ToolMessage(
                     content=str(scan_result),
