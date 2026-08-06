@@ -71,18 +71,20 @@ AGENT = create_agent(
 if __name__ == "__main__":
     config = {
         "configurable": {
-            "thread_id": "middleware-success-test",
+            "thread_id": "planning-test",
         }
     }
 
-    first_result = AGENT.invoke(
+    result = AGENT.invoke(
         {
             "messages": [
                 {
                     "role": "user",
                     "content": (
                         "Scan the repository at "
-                        "external_repos/requests."
+                        "external_repos/requests, "
+                        "generate an SPDX report, "
+                        "and provide compliance advice."
                     ),
                 }
             ]
@@ -90,26 +92,16 @@ if __name__ == "__main__":
         config=config,
     )
 
-    print("\nFIRST RESPONSE:")
+    print("\nFINAL RESPONSE:")
     print(
-        first_result["messages"][-1].content
+        result["messages"][-1].content
     )
 
-    second_result = AGENT.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        "Generate an SPDX report."
-                    ),
-                }
-            ]
-        },
-        config=config,
+    state_snapshot = AGENT.get_state(
+        config
     )
 
-    print("\nSECOND RESPONSE:")
+    print("\nSTORED PLAN:")
     print(
-        second_result["messages"][-1].content
+        state_snapshot.values.get("plan")
     )
