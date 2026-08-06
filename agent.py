@@ -32,6 +32,9 @@ from langchain.messages import AIMessage
 from middleware.compliance_middleware import (
     log_agent_request,
 )
+from executor.plan_executor import (
+    execute_plan,
+)
 
 LLM = ChatOpenAI(
     model=AI_MODEL,
@@ -92,6 +95,19 @@ if __name__ == "__main__":
         config=config,
     )
 
+    state_snapshot = AGENT.get_state(
+        config
+    )
+
+    plan = state_snapshot.values.get(
+        "plan",
+        [],
+    )
+
+    execute_plan(
+        plan,
+    )
+
     print("\nFINAL RESPONSE:")
     print(
         result["messages"][-1].content
@@ -105,3 +121,12 @@ if __name__ == "__main__":
     print(
         state_snapshot.values.get("plan")
     )
+
+    print(
+        "\nFULL STATE:"
+    )
+
+    for key, value in state_snapshot.values.items():
+        print(
+            f"{key}: {value}"
+        )
