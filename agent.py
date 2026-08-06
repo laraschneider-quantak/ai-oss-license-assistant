@@ -9,10 +9,7 @@ from tools.repository_tools import (
     scan_repository_tool,
 )
 
-from langchain.agents import (
-    AgentState,
-    create_agent,
-)
+from langchain.agents import create_agent
 
 from tools.report_tools import (
     generate_spdx_tool,
@@ -26,37 +23,15 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from langchain.agents.middleware import before_agent
 
-class ComplianceAgentState(AgentState):
-    repo_path: str
-    repo_name: str
-    scan_result: dict
-    highest_risk: str
-    highest_policy: str
-    detected_licenses: list[str]
+from schemas.agent_state import (
+    ComplianceAgentState,
+)
 
+from langchain.messages import AIMessage
 
-@before_agent
-def log_agent_request(
-    state: ComplianceAgentState,
-    runtime,
-) -> None:
-    """
-    Log each incoming agent request.
-    """
-
-    messages = state.get(
-        "messages",
-        [],
-    )
-
-    print(
-        ">>> MIDDLEWARE: agent request received"
-    )
-
-    print(
-        ">>> MIDDLEWARE: stored messages:",
-        len(messages),
-    )
+from middleware.compliance_middleware import (
+    log_agent_request,
+)
 
 LLM = ChatOpenAI(
     model=AI_MODEL,
@@ -96,18 +71,20 @@ AGENT = create_agent(
 if __name__ == "__main__":
     config = {
         "configurable": {
-            "thread_id": "oss-demo",
+            "thread_id": "planning-test",
         }
     }
 
-    first_result = AGENT.invoke(
+    result = AGENT.invoke(
         {
             "messages": [
                 {
                     "role": "user",
                     "content": (
                         "Scan the repository at "
-                        "external_repos/requests."
+                        "external_repos/requests, "
+                        "generate an SPDX report, "
+                        "and provide compliance advice."
                     ),
                 }
             ]
@@ -115,23 +92,16 @@ if __name__ == "__main__":
         config=config,
     )
 
-    print("\nFIRST RESPONSE:")
-    print(first_result["messages"][-1].content)
-
-    second_result = AGENT.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        "What is the highest policy decision "
-                        "and which licenses were detected?"
-                    ),               
-                }
-            ]
-        },
-        config=config,
+    print("\nFINAL RESPONSE:")
+    print(
+        result["messages"][-1].content
     )
 
-    print("\nSECOND RESPONSE:")
-    print(second_result["messages"][-1].content)
+    state_snapshot = AGENT.get_state(
+        config
+    )
+
+    print("\nSTORED PLAN:")
+    print(
+        state_snapshot.values.get("plan")
+    )
