@@ -1,43 +1,48 @@
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
 
 from config import (
     AI_MODEL,
     OPENAI_API_KEY,
 )
 
-from tools.repository_tools import (
-    scan_repository_tool,
+from executor.plan_executor import (
+    execute_plan,
 )
 
-from langchain.agents import create_agent
+from middleware.compliance_middleware import (
+    log_agent_request,
+)
 
-from tools.report_tools import (
-    generate_spdx_tool,
+from planner.request_planner import (
+    create_plan,
+)
+
+from schemas.agent_state import (
+    ComplianceAgentState,
 )
 
 from tools.advice_tools import (
     generate_ai_advice_tool,
 )
 
-from langgraph.checkpoint.memory import InMemorySaver
-
-from langchain.agents.middleware import before_agent
-
-from schemas.agent_state import (
-    ComplianceAgentState,
+from tools.report_tools import (
+    generate_spdx_tool,
 )
 
-from langchain.messages import AIMessage
-
-from middleware.compliance_middleware import (
-    log_agent_request,
+from tools.repository_tools import (
+    scan_repository_tool,
 )
+
 from executor.plan_executor import (
+    create_execution_context,
     execute_plan,
 )
 
+
 LLM = ChatOpenAI(
-    model=AI_MODEL,
+    model=AI_MODEL,    
     api_key=OPENAI_API_KEY,
 )
 
@@ -48,8 +53,6 @@ TOOLS = [
     generate_ai_advice_tool,
     generate_spdx_tool,
 ]
-
-MEMORY = InMemorySaver()
 
 AGENT = create_agent(
     model=LLM,
@@ -71,6 +74,7 @@ AGENT = create_agent(
     ],
 )
 
+
 if __name__ == "__main__":
     config = {
         "configurable": {
@@ -78,55 +82,62 @@ if __name__ == "__main__":
         }
     }
 
+    user_request = (
+        "Scan the repository at "
+        "external_repos/requests, "
+        "generate an SPDX report, "
+        "and provide compliance advice."
+    )
+
+    plan = create_plan(
+        user_request
+    )
+
+    print("\nPLAN:")
+    print(plan)
+
+    context = create_execution_context(
+        repo_path="external_repos/requests",
+        repo_name="requests",
+    )
+
+    context = execute_plan(
+        plan,
+        context,
+    )
+
+    print(
+        "\nEXECUTOR SPDX RESULT:"
+    )
+
+    print(
+        context["spdx_result"]
+    )
+
+    print("\nEXECUTION CONTEXT:")
+    print(context)
+
+    print(
+        "\nSPDX RESULT:"
+    )
+
+    print(
+        context["spdx_result"]
+    )
+
     result = AGENT.invoke(
         {
             "messages": [
                 {
                     "role": "user",
-                    "content": (
-                        "Scan the repository at "
-                        "external_repos/requests, "
-                        "generate an SPDX report, "
-                        "and provide compliance advice."
-                    ),
+                    "content": user_request,
                 }
             ]
         },
         config=config,
     )
 
-    state_snapshot = AGENT.get_state(
-        config
-    )
-
-    plan = state_snapshot.values.get(
-        "plan",
-        [],
-    )
-
-    execute_plan(
-        plan,
-    )
-
     print("\nFINAL RESPONSE:")
     print(
         result["messages"][-1].content
     )
-
-    state_snapshot = AGENT.get_state(
-        config
-    )
-
-    print("\nSTORED PLAN:")
-    print(
-        state_snapshot.values.get("plan")
-    )
-
-    print(
-        "\nFULL STATE:"
-    )
-
-    for key, value in state_snapshot.values.items():
-        print(
-            f"{key}: {value}"
-        )
