@@ -56,4 +56,12 @@ def execute_plan(
                 ],
             )
 
+        elif step == "generate_ai_advice":
+            context["ai_advice"] = generate_compliance_advice(
+                scan_results=context["scan_result"][
+                    "scan_results"
+                ]
+            )
+   
+
     return context

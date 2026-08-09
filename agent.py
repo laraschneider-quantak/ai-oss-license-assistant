@@ -106,6 +106,11 @@ if __name__ == "__main__":
         context,
     )
 
+    print("\nAI ADVICE:")
+    print(
+        context["ai_advice"]
+    )
+
     print(
         "\nEXECUTOR SPDX RESULT:"
     )
@@ -125,19 +130,44 @@ if __name__ == "__main__":
         context["spdx_result"]
     )
 
-    result = AGENT.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": user_request,
-                }
-            ]
-        },
-        config=config,
+    if __name__ == "__main__":
+        user_request = (
+        "Scan the repository at "
+        "external_repos/requests, "
+        "generate an SPDX report, "
+        "and provide compliance advice."
     )
 
-    print("\nFINAL RESPONSE:")
+    plan = create_plan(
+        user_request
+    )
+
+    print("\nPLAN:")
+    print(plan)
+
+    context = create_execution_context(
+        repo_path="external_repos/requests",
+        repo_name="requests",
+    )
+
+    context = execute_plan(
+        plan,
+        context,
+    )
+
+    print("\nEXECUTION SUMMARY:")
+
     print(
-        result["messages"][-1].content
+        "Scan successful:",
+        context["scan_result"]["success"],
+    )
+
+    print(
+        "SPDX generated:",
+        context["spdx_result"] is not None,
+    )
+
+    print(
+        "AI advice generated:",
+        context["ai_advice"] is not None,
     )
