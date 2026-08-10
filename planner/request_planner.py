@@ -1,6 +1,9 @@
+from models.plan_step import PlanStep
+
+
 def create_plan(
     user_request: str,
-) -> list[str]:
+) -> list[PlanStep]:
     """
     Create a simple execution plan
     from the user's request.
@@ -12,7 +15,9 @@ def create_plan(
 
     if "scan" in request:
         plan.append(
-            "scan_repository"
+            PlanStep(
+                name="scan_repository",
+            )
         )
 
     if (
@@ -20,7 +25,12 @@ def create_plan(
         or "spdx report" in request
     ):
         plan.append(
-            "generate_spdx"
+            PlanStep(
+                name="generate_spdx",
+                depends_on=[
+                    "scan_repository",
+                ],
+            )
         )
 
     if any(
@@ -32,7 +42,12 @@ def create_plan(
         ]
     ):
         plan.append(
-            "generate_ai_advice"
+            PlanStep(
+                name="generate_ai_advice",
+                depends_on=[
+                    "scan_repository",
+                ],
+            )
         )
 
     return plan
