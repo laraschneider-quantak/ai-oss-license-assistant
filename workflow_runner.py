@@ -21,6 +21,11 @@ def run_workflow(
         user_request
     )
 
+    print(
+        "\nPLAN:",
+        plan,
+    )
+
     context = create_execution_context(
         repo_path=repo_path,
         repo_name=repo_name,
@@ -52,15 +57,15 @@ if __name__ == "__main__":
 
     print(
         "Scan successful:",
-        result["scan_result"]["success"],
+        result.scan_result["success"],
     )
 
     print(
         "SPDX generated:",
-        result["spdx_result"] is not None,
+        result.spdx_result is not None,
     )
 
     print(
         "AI advice generated:",
-        result["ai_advice"] is not None,
+        result.ai_advice is not None,
     )
