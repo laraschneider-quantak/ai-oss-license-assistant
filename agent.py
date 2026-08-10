@@ -7,16 +7,8 @@ from config import (
     OPENAI_API_KEY,
 )
 
-from executor.plan_executor import (
-    execute_plan,
-)
-
 from middleware.compliance_middleware import (
     log_agent_request,
-)
-
-from planner.request_planner import (
-    create_plan,
 )
 
 from schemas.agent_state import (
@@ -35,14 +27,9 @@ from tools.repository_tools import (
     scan_repository_tool,
 )
 
-from executor.plan_executor import (
-    create_execution_context,
-    execute_plan,
-)
-
 
 LLM = ChatOpenAI(
-    model=AI_MODEL,    
+    model=AI_MODEL,
     api_key=OPENAI_API_KEY,
 )
 
@@ -73,101 +60,3 @@ AGENT = create_agent(
         log_agent_request,
     ],
 )
-
-
-if __name__ == "__main__":
-    config = {
-        "configurable": {
-            "thread_id": "planning-test",
-        }
-    }
-
-    user_request = (
-        "Scan the repository at "
-        "external_repos/requests, "
-        "generate an SPDX report, "
-        "and provide compliance advice."
-    )
-
-    plan = create_plan(
-        user_request
-    )
-
-    print("\nPLAN:")
-    print(plan)
-
-    context = create_execution_context(
-        repo_path="external_repos/requests",
-        repo_name="requests",
-    )
-
-    context = execute_plan(
-        plan,
-        context,
-    )
-
-    print("\nAI ADVICE:")
-    print(
-        context["ai_advice"]
-    )
-
-    print(
-        "\nEXECUTOR SPDX RESULT:"
-    )
-
-    print(
-        context["spdx_result"]
-    )
-
-    print("\nEXECUTION CONTEXT:")
-    print(context)
-
-    print(
-        "\nSPDX RESULT:"
-    )
-
-    print(
-        context["spdx_result"]
-    )
-
-    if __name__ == "__main__":
-        user_request = (
-        "Scan the repository at "
-        "external_repos/requests, "
-        "generate an SPDX report, "
-        "and provide compliance advice."
-    )
-
-    plan = create_plan(
-        user_request
-    )
-
-    print("\nPLAN:")
-    print(plan)
-
-    context = create_execution_context(
-        repo_path="external_repos/requests",
-        repo_name="requests",
-    )
-
-    context = execute_plan(
-        plan,
-        context,
-    )
-
-    print("\nEXECUTION SUMMARY:")
-
-    print(
-        "Scan successful:",
-        context["scan_result"]["success"],
-    )
-
-    print(
-        "SPDX generated:",
-        context["spdx_result"] is not None,
-    )
-
-    print(
-        "AI advice generated:",
-        context["ai_advice"] is not None,
-    )
