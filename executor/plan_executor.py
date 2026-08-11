@@ -40,6 +40,8 @@ def execute_plan(
     Execute a generated plan step by step.
     """
 
+    completed_steps = set()
+
     for index, step in enumerate(
         plan,
         start=1,
@@ -47,6 +49,21 @@ def execute_plan(
         print(
             f">>> EXECUTOR: Step {index}: {step.name}"
         )
+
+        if not all(
+            dependency in completed_steps
+            for dependency in step.depends_on
+        ):
+            missing_dependencies = [
+                dependency
+                for dependency in step.depends_on
+                if dependency not in completed_steps
+            ]
+
+            raise RuntimeError(
+                f"Cannot execute '{step.name}'. "
+                f"Missing dependencies: {missing_dependencies}"
+            )
 
         if step.name == "scan_repository":
             context.scan_result = run_repository_scan(
@@ -68,5 +85,14 @@ def execute_plan(
                     "scan_results"
                 ]
             )
+
+        else:
+            raise ValueError(
+                f"Unknown plan step: {step.name}"
+            )
+
+        completed_steps.add(
+            step.name
+        )
 
     return context
