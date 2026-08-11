@@ -1,46 +1,79 @@
-from tools.repository_tools import scan_repository_tool
-from tools.report_tools import generate_spdx_tool
+from executor.plan_executor import (
+    create_execution_context,
+    execute_plan,
+)
+
+from planner.request_planner import (
+    create_plan,
+)
 
 
 def run_compliance_workflow(
+    user_request: str,
     repo_path: str,
     repo_name: str,
-) -> dict:
+):
     """
-    Run the repository scan first and generate an SPDX report afterwards.
+    Create and execute a deterministic
+    OSS compliance workflow.
     """
 
-    print(">>> WORKFLOW: starting repository scan")
-
-    scan_result = scan_repository_tool.invoke(
-        {
-            "repo_path": repo_path,
-            "repo_name": repo_name,
-        }
+    plan = create_plan(
+        user_request
     )
 
-    print(">>> WORKFLOW: repository scan finished")
-    print(">>> WORKFLOW: starting SPDX generation")
-
-    spdx_result = generate_spdx_tool.invoke(
-        {
-            "repo_name": repo_name,
-        }
+    print(
+        "\nPLAN:",
+        plan,
     )
 
-    print(">>> WORKFLOW: SPDX generation finished")
+    context = create_execution_context(
+        repo_path=repo_path,
+        repo_name=repo_name,
+    )
 
-    return {
-        "scan_result": scan_result,
-        "spdx_result": spdx_result,
-    }
+    context = execute_plan(
+        plan,
+        context,
+    )
+
+    return context
 
 
 if __name__ == "__main__":
+    user_request = (
+        "Scan the repository at "
+        "external_repos/requests, "
+        "generate an SPDX report, "
+        "and provide compliance advice."
+    )
+
     result = run_compliance_workflow(
+        user_request=user_request,
         repo_path="external_repos/requests",
         repo_name="requests",
     )
 
-    print("\nWORKFLOW RESULT:")
-    print(result)
+    print(
+        "RESULT TYPE:",
+        type(result).__name__,
+    )
+
+    print(
+        "\nEXECUTION SUMMARY:"
+    )
+
+    print(
+        "Scan successful:",
+        result.scan_result["success"],
+    )
+
+    print(
+        "SPDX generated:",
+        result.spdx_result is not None,
+    )
+
+    print(
+        "AI advice generated:",
+        result.ai_advice is not None,
+    )
