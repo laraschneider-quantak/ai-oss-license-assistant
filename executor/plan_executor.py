@@ -8,6 +8,7 @@ from models.execution_context import (
 
 from models.plan_step import (
     PlanStep,
+    StepStatus,
 )
 
 
@@ -50,6 +51,15 @@ def execute_plan(
             f">>> EXECUTOR: Step {index}: {step.name}"
         )
 
+
+        step.status = StepStatus.RUNNING
+
+        print(
+            f">>> EXECUTOR: {step.name} status: "
+            f"{step.status.value}"
+        )
+                
+
         if not all(
             dependency in completed_steps
             for dependency in step.depends_on
@@ -90,6 +100,13 @@ def execute_plan(
             raise ValueError(
                 f"Unknown plan step: {step.name}"
             )
+
+        step.status = StepStatus.COMPLETED
+
+        print(
+            f">>> EXECUTOR: {step.name} status: "
+            f"{step.status.value}"
+        )
 
         completed_steps.add(
             step.name
