@@ -1,23 +1,22 @@
+from policy_loader import load_license_policy
+
+from policy_loader import load_license_policy
 
 
+LICENSE_POLICY = load_license_policy(
+    "config/policies/license_policy.json"
+)
 
-def get_risk_level(license_name):
-    risk_map = {
-        "MIT": "Low Risk",
-        "Apache": "Low Risk",
-        "BSD": "Low Risk",
-        "MPL": "Medium Risk",
-        "EPL": "Medium Risk",
-        "CDDL": "Medium Risk",
-        "LGPL": "Medium Risk",
-        "GPL": "High Risk",
-        "AGPL": "Very High Risk"
-    }
-    
-    return risk_map.get(
+
+def get_risk_level(
         license_name,
-        "Unknown Risk"
-    )
+    ):
+        policy = LICENSE_POLICY.get(
+            license_name,
+            LICENSE_POLICY["Unknown"],
+        )
+
+        return policy["risk"]
 
 
 def get_spdx_id(license_name):
@@ -39,21 +38,12 @@ def get_spdx_id(license_name):
         )
 
 
-def get_policy_decision(license_name):
-    policy_map = {
-        "MIT": "Approved",
-        "Apache": "Approved",
-        "BSD": "Approved",
-        "MPL": "Review Required",
-        "EPL": "Review Required",
-        "CDDL": "Review Required",
-        "LGPL": "Review Required",
-        "GPL": "Legal Review Required",
-        "AGPL": "Blocked / High Review",
-        "Unknown": "Manual Review"
-    }
-
-    return policy_map.get(
+def get_policy_decision(
+    license_name,
+):
+    policy = LICENSE_POLICY.get(
         license_name,
-        "Manual Review"
+        LICENSE_POLICY["Unknown"],
     )
+
+    return policy["decision"]

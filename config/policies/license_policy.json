@@ -1,0 +1,42 @@
+{
+    "MIT": {
+        "decision": "Approved",
+        "risk": "Low Risk"
+    },
+    "Apache": {
+        "decision": "Approved",
+        "risk": "Low Risk"
+    },
+    "BSD": {
+        "decision": "Approved",
+        "risk": "Low Risk"
+    },
+    "MPL": {
+        "decision": "Review Required",
+        "risk": "Medium Risk"
+    },
+    "EPL": {
+        "decision": "Review Required",
+        "risk": "Medium Risk"
+    },
+    "CDDL": {
+        "decision": "Review Required",
+        "risk": "Medium Risk"
+    },
+    "LGPL": {
+        "decision": "Review Required",
+        "risk": "Medium Risk"
+    },
+    "GPL": {
+        "decision": "Legal Review Required",
+        "risk": "High Risk"
+    },
+    "AGPL": {
+        "decision": "Blocked / High Review",
+        "risk": "Very High Risk"
+    },
+    "Unknown": {
+        "decision": "Manual Review",
+        "risk": "Unknown Risk"
+    }
+}
