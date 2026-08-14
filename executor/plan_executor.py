@@ -11,6 +11,9 @@ from models.plan_step import (
     StepStatus,
 )
 
+from audit_logger import (
+    log_workflow_event,
+)
 
 STEP_HANDLERS = {
     "scan_repository": run_repository_scan,
@@ -51,57 +54,82 @@ def execute_plan(
             f">>> EXECUTOR: Step {index}: {step.name}"
         )
 
-
         step.status = StepStatus.RUNNING
+
+
+        log_workflow_event(
+            {
+                "run_id": context.run_id,
+                "event_type": "step_started",
+                "repo_name": context.repo_name,
+                "step_name": step.name,
+                "status": step.status.value,
+            }
+        )
 
         print(
             f">>> EXECUTOR: {step.name} status: "
             f"{step.status.value}"
         )
-                
 
-        if not all(
-            dependency in completed_steps
-            for dependency in step.depends_on
-        ):
-            missing_dependencies = [
-                dependency
-                for dependency in step.depends_on
-                if dependency not in completed_steps
-            ]
+        try:
+            if step.name == "scan_repository":
+                context.scan_result = run_repository_scan(
+                    repo_path=context.repo_path,
+                    repo_name=context.repo_name,
+                )
 
-            raise RuntimeError(
-                f"Cannot execute '{step.name}'. "
-                f"Missing dependencies: {missing_dependencies}"
+            elif step.name == "generate_spdx":
+                context.spdx_result = generate_spdx_report(
+                    repo_name=context.repo_name,
+                    scan_results=context.scan_result[
+                        "scan_results"
+                    ],
+                )
+
+            elif step.name == "generate_ai_advice":
+                context.ai_advice = generate_compliance_advice(
+                    scan_results=context.scan_result[
+                        "scan_results"
+                    ]
+                )
+
+            else:
+                raise ValueError(
+                    f"Unknown plan step: {step.name}"
+                )
+
+        except Exception:
+            step.status = StepStatus.FAILED
+
+            log_workflow_event(
+                {
+                    "run_id": context.run_id,
+                    "event_type": "step_failed",
+                    "repo_name": context.repo_name,
+                    "step_name": step.name,
+                    "status": step.status.value,
+                }
             )
 
-        if step.name == "scan_repository":
-            context.scan_result = run_repository_scan(
-                repo_path=context.repo_path,
-                repo_name=context.repo_name,
+            print(
+                f">>> EXECUTOR: {step.name} status: "
+                f"{step.status.value}"
             )
 
-        elif step.name == "generate_spdx":
-            context.spdx_result = generate_spdx_report(
-                repo_name=context.repo_name,
-                scan_results=context.scan_result[
-                    "scan_results"
-                ],
-            )
-
-        elif step.name == "generate_ai_advice":
-            context.ai_advice = generate_compliance_advice(
-                scan_results=context.scan_result[
-                    "scan_results"
-                ]
-            )
-
-        else:
-            raise ValueError(
-                f"Unknown plan step: {step.name}"
-            )
+            raise
 
         step.status = StepStatus.COMPLETED
+
+        log_workflow_event(
+            {
+                "run_id": context.run_id,
+                "event_type": "step_completed",
+                "repo_name": context.repo_name,
+                "step_name": step.name,
+                "status": step.status.value,
+            }
+        )
 
         print(
             f">>> EXECUTOR: {step.name} status: "
@@ -112,4 +140,6 @@ def execute_plan(
             step.name
         )
 
+
+        
     return context
