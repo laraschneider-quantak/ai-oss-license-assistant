@@ -1,6 +1,7 @@
 from ai_advisor import generate_compliance_advice
 from scanner_service import run_repository_scan
 from spdx_service import generate_spdx_report
+from risk_register import create_risk_items
 
 from models.execution_context import (
     ExecutionContext,
@@ -54,6 +55,19 @@ def execute_plan(
             f">>> EXECUTOR: Step {index}: {step.name}"
         )
 
+        missing_dependencies = [
+            dependency
+            for dependency in step.depends_on
+            if dependency not in completed_steps
+        ]
+
+        if missing_dependencies:
+            raise RuntimeError(
+                f"Cannot execute '{step.name}'. "
+                f"Missing dependencies: "
+                f"{missing_dependencies}"
+            )
+
         step.status = StepStatus.RUNNING
 
 
@@ -77,6 +91,14 @@ def execute_plan(
                 context.scan_result = run_repository_scan(
                     repo_path=context.repo_path,
                     repo_name=context.repo_name,
+                )
+
+                context.risk_items = create_risk_items(
+                    run_id=context.run_id,
+                    repo_name=context.repo_name,
+                    scan_results=context.scan_result[
+                        "scan_results"
+                    ],
                 )
 
             elif step.name == "generate_spdx":
@@ -140,6 +162,8 @@ def execute_plan(
             step.name
         )
 
+    return context
+
 
         
-    return context
+    

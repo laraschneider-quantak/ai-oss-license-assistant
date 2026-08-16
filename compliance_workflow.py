@@ -77,3 +77,8 @@ if __name__ == "__main__":
         "AI advice generated:",
         result.ai_advice is not None,
     )
+
+    print(
+        "Risk items created:",
+        len(result.risk_items),
+    )
