@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
 from uuid import uuid4
 
+from models.governance_decision_record import (
+    GovernanceDecisionRecord,
+)
 
 @dataclass
 class ExecutionContext:
@@ -18,3 +21,9 @@ class ExecutionContext:
     scan_result: dict | None = None
     spdx_result: str | None = None
     ai_advice: object | None = None
+
+    governance_decision_records: list[
+        GovernanceDecisionRecord
+    ] = field(
+        default_factory=list
+    )

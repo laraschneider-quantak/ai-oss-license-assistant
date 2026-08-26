@@ -77,3 +77,49 @@ if __name__ == "__main__":
         "AI advice generated:",
         result.ai_advice is not None,
     )
+
+    print(
+        "Governance decision records:",
+        len(result.governance_decision_records),
+    )
+
+    for record in result.governance_decision_records:
+        print(
+            "\nDECISION RECORD:"
+        )
+        print(
+            "Decision ID:",
+            record.decision_id,
+        )
+        print(
+            "Run ID:",
+            record.run_id,
+        )
+        print(
+            "Finding:",
+            record.finding,
+        )
+        print(
+            "Evidence:",
+            record.deterministic_evidence,
+        )
+        print(
+            "AI recommendation:",
+            record.ai_recommendation,
+        )
+        print(
+            "Uncertainty:",
+            record.uncertainty,
+        )
+        print(
+            "Human review required:",
+            record.human_review_required,
+        )
+        print(
+            "Final decision:",
+            record.final_decision,
+        )
+        print(
+            "Timestamp:",
+            record.timestamp,
+        )

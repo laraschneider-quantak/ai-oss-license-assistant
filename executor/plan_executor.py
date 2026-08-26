@@ -1,6 +1,7 @@
 from ai_advisor import generate_compliance_advice
 from scanner_service import run_repository_scan
 from spdx_service import generate_spdx_report
+from config import AI_MODEL
 
 from models.execution_context import (
     ExecutionContext,
@@ -13,6 +14,10 @@ from models.plan_step import (
 
 from audit_logger import (
     log_workflow_event,
+)
+
+from governance_decision_service import (
+    create_governance_decision_records,
 )
 
 STEP_HANDLERS = {
@@ -54,8 +59,20 @@ def execute_plan(
             f">>> EXECUTOR: Step {index}: {step.name}"
         )
 
-        step.status = StepStatus.RUNNING
+        missing_dependencies = [
+            dependency
+            for dependency in step.depends_on
+            if dependency not in completed_steps
+        ]
 
+        if missing_dependencies:
+            raise RuntimeError(
+                f"Cannot execute '{step.name}'. "
+                f"Missing dependencies: "
+                f"{missing_dependencies}"
+            )
+
+        step.status = StepStatus.RUNNING
 
         log_workflow_event(
             {
@@ -79,6 +96,7 @@ def execute_plan(
                     repo_name=context.repo_name,
                 )
 
+              
             elif step.name == "generate_spdx":
                 context.spdx_result = generate_spdx_report(
                     repo_name=context.repo_name,
@@ -92,6 +110,19 @@ def execute_plan(
                     scan_results=context.scan_result[
                         "scan_results"
                     ]
+                )
+
+                context.governance_decision_records = (
+                    create_governance_decision_records(
+                        run_id=context.run_id,
+                        scan_results=context.scan_result[
+                            "scan_results"
+                        ],
+                        ai_advice=context.ai_advice,
+                        retrieved_context=None,
+                        ai_provider="OpenAI",
+                        ai_model=AI_MODEL,
+                    )
                 )
 
             else:
@@ -140,6 +171,4 @@ def execute_plan(
             step.name
         )
 
-
-        
     return context
