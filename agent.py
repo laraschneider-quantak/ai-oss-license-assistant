@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     print("\nAI ADVICE:")
     print(
-        context["ai_advice"]
+        context.ai_advice
     )
 
     print(
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     )
 
     print(
-        context["spdx_result"]
+        context.spdx_result
     )
 
     print("\nEXECUTION CONTEXT:")
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     )
 
     print(
-        context["spdx_result"]
+        context.spdx_result
     )
 
     if __name__ == "__main__":
@@ -159,15 +159,15 @@ if __name__ == "__main__":
 
     print(
         "Scan successful:",
-        context["scan_result"]["success"],
+        context.scan_result["success"]
     )
 
     print(
         "SPDX generated:",
-        context["spdx_result"] is not None,
+        context.spdx_result is not None,
     )
 
     print(
         "AI advice generated:",
-        context["ai_advice"] is not None,
+        context.ai_advice is not None,
     )
